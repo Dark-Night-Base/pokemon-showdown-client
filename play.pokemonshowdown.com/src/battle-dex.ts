@@ -18,36 +18,114 @@
  * @license MIT
  */
 
-declare var require: any;
-declare var global: any;
+import { Pokemon, type ServerPokemon } from "./battle";
+import {
+	BattleAvatarNumbers, BattleBaseSpeciesChart, BattlePokemonIconIndexes, BattlePokemonIconIndexesLeft, BattleStatNames,
+	Ability, Item, Move, Species, PureEffect, type ID, type Type,
+} from "./battle-dex-data";
+import type * as DexData from "./battle-dex-data";
+import type { SearchRow } from "./battle-dex-search";
+
+export declare namespace Dex {
+	/* eslint-disable @typescript-eslint/no-shadow */
+	export type Ability = DexData.Ability;
+	export type Item = DexData.Item;
+	export type Move = DexData.Move;
+	export type Species = DexData.Species;
+	export type Type = DexData.Type;
+	export type Nature = DexData.Nature;
+	export type PureEffect = DexData.PureEffect;
+	export type Effect = DexData.Effect;
+	export type ID = DexData.ID;
+	/* eslint-enable @typescript-eslint/no-shadow */
+	export type StatName = DexData.StatName;
+	export type StatNameExceptHP = DexData.StatNameExceptHP;
+	export type BoostStatName = DexData.BoostStatName;
+	export type TypeName = DexData.TypeName;
+	export type StatusName = DexData.StatusName;
+	export type GenderName = DexData.GenderName;
+	export type NatureName = DexData.NatureName;
+	export type MoveTarget = DexData.MoveTarget;
+	export type REGULAR = 0;
+	export type WEAK = 1;
+	export type RESIST = 2;
+	export type IMMUNE = 3;
+	export type WeaknessType = REGULAR | WEAK | RESIST | IMMUNE;
+	export type StatsTable = { hp: number, atk: number, def: number, spa: number, spd: number, spe: number };
+	/**
+	 * Dex.PokemonSet can be sparse, in which case that entry should be
+	 * inferred from the rest of the set, according to sensible
+	 * defaults.
+	 */
+	export interface PokemonSet {
+		/** Defaults to species name (not including forme), like in games */
+		name?: string;
+		species: string;
+		/** Defaults to no item */
+		item?: string;
+		/** Defaults to no ability (error in Gen 3+) */
+		ability?: string;
+		moves: string[];
+		/** Defaults to no nature (error in Gen 3+) */
+		nature?: NatureName;
+		/** Defaults to random legal gender, NOT subject to gender ratios */
+		gender?: string;
+		/** Defaults to flat 252's (200's/0's in Let's Go) (error in gen 3+) */
+		evs?: Partial<Dex.StatsTable>;
+		/** Defaults to whatever makes sense - flat 31's unless you have Gyro Ball etc */
+		ivs?: Dex.StatsTable;
+		/** Defaults as you'd expect (100 normally, 50 in VGC-likes, 5 in LC) */
+		level?: number;
+		/** Defaults to no (error if shiny event) */
+		shiny?: boolean;
+		/** Defaults to 255 unless you have Frustration, in which case 0 */
+		happiness?: number;
+		/** Defaults to event required ball, otherwise Poké Ball */
+		pokeball?: string;
+		/** Defaults to the type of your Hidden Power in Moves, otherwise Dark */
+		hpType?: string;
+		/** Defaults to 10 */
+		dynamaxLevel?: number;
+		/** Defaults to no (can only be yes for certain Pokemon) */
+		gigantamax?: boolean;
+		/** Defaults to the primary type */
+		teraType?: string;
+		/** for digimon */
+		preEvo?: string;
+	}
+}
+export type { ID };
+
+declare const require: any;
+declare const global: any;
+declare const process: any;
 
 if (typeof window === 'undefined') {
 	// Node
-	(global as any).window = global;
+	global.window = global;
 } else {
 	// browser (possibly NW.js!)
 	window.exports = window;
 }
 
-// @ts-ignore
-window.nodewebkit = !!(typeof process !== 'undefined' && process.versions && process.versions['node-webkit']);
+window.nodewebkit = !!(typeof process !== 'undefined' && process.versions?.['node-webkit']);
 
-function toID(text: any) {
+export function toID(text: any) {
 	if (text?.id) {
 		text = text.id;
 	} else if (text?.userid) {
 		text = text.userid;
 	}
 	if (typeof text !== 'string' && typeof text !== 'number') return '' as ID;
-	return ('' + text).toLowerCase().replace(/[^a-z0-9]+/g, '') as ID;
+	return `${text}`.toLowerCase().replace(/[^a-z0-9]+/g, '') as ID;
 }
 
-function toUserid(text: any) {
+export function toUserid(text: any) {
 	return toID(text);
 }
 
-type Comparable = number | string | boolean | Comparable[] | {reverse: Comparable};
-const PSUtils = new class {
+type Comparable = number | string | boolean | Comparable[] | { reverse: Comparable };
+export const PSUtils = new class {
 	/**
 	 * Like string.split(delimiter), but only recognizes the first `limit`
 	 * delimiters (default 1).
@@ -58,7 +136,7 @@ const PSUtils = new class {
 	 *
 	 * Returns an array of length exactly limit + 1.
 	 */
-	splitFirst(str: string, delimiter: string, limit: number = 1) {
+	splitFirst(str: string, delimiter: string, limit = 1) {
 		let splitStr: string[] = [];
 		while (splitStr.length < limit) {
 			let delimiterIndex = str.indexOf(delimiter);
@@ -103,9 +181,9 @@ const PSUtils = new class {
 			return 0;
 		}
 		if (a.reverse) {
-			return PSUtils.compare((b as {reverse: string}).reverse, a.reverse);
+			return PSUtils.compare((b as { reverse: string }).reverse, a.reverse);
 		}
-		throw new Error(`Passed value ${a} is not comparable`);
+		throw new Error(`Passed value ${a as any} is not comparable`);
 	}
 	/**
 	 * Sorts an array according to the callback's output on its elements.
@@ -129,13 +207,13 @@ const PSUtils = new class {
  * Sanitize a room ID by removing anything that isn't alphanumeric or `-`.
  * Shouldn't actually do anything except against malicious input.
  */
-function toRoomid(roomid: string) {
+export function toRoomid(roomid: string) {
 	return roomid.replace(/[^a-zA-Z0-9-]+/g, '').toLowerCase();
 }
 
-function toName(name: any) {
+export function toName(name: any) {
 	if (typeof name !== 'string' && typeof name !== 'number') return '';
-	name = ('' + name).replace(/[\|\s\[\]\,\u202e]+/g, ' ').trim();
+	name = `${name}`.replace(/[|\s[\],\u202e]+/g, ' ').trim();
 	if (name.length > 18) name = name.substr(0, 18).trim();
 
 	// remove zalgo
@@ -148,7 +226,7 @@ function toName(name: any) {
 	return name;
 }
 
-interface SpriteData {
+export interface SpriteData {
 	w: number;
 	h: number;
 	y?: number;
@@ -161,7 +239,7 @@ interface SpriteData {
 	shiny?: boolean;
 }
 
-interface TeambuilderSpriteData {
+export interface TeambuilderSpriteData {
 	x: number;
 	y: number;
 	spriteDir: string;
@@ -169,15 +247,25 @@ interface TeambuilderSpriteData {
 	shiny?: boolean;
 }
 
-const Dex = new class implements ModdedDex {
+export const Dex = new class implements ModdedDex {
+	readonly Ability = Ability;
+	readonly Item = Item;
+	readonly Move = Move;
+	readonly Species = Species;
+
 	readonly gen = 9;
 	readonly learnsetGenchar = 'a';
 	readonly currentGen = `gen${this.gen}`;
 	readonly modid = [this.currentGen, this.currentGen] as ID[];
 	readonly cache = null!;
 
-	readonly statNames: ReadonlyArray<StatName> = ['hp', 'atk', 'def', 'spa', 'spd', 'spe'];
-	readonly statNamesExceptHP: ReadonlyArray<StatNameExceptHP> = ['atk', 'def', 'spa', 'spd', 'spe'];
+	readonly REGULAR = 0;
+	readonly WEAK = 1;
+	readonly RESIST = 2;
+	readonly IMMUNE = 3;
+
+	readonly statNames: readonly Dex.StatName[] = ['hp', 'atk', 'def', 'spa', 'spd', 'spe'];
+	readonly statNamesExceptHP: readonly Dex.StatNameExceptHP[] = ['atk', 'def', 'spa', 'spd', 'spe'];
 
 	pokeballs: string[] | null = null;
 
@@ -193,8 +281,8 @@ const Dex = new class implements ModdedDex {
 		return `${protocol}//${window.Config ? Config.routes.client : 'play.pokemonshowdown.com'}/fx/`;
 	})();
 
-	loadedSpriteData = {xy: 1, bw: 0};
-	moddedDexes: {[mod: string]: ModdedDex} = {};
+	loadedSpriteData = { xy: 1, bw: 0 };
+	moddedDexes: { [mod: string]: ModdedDex } = {};
 
 	parseFormatid(formatid: ID): ID[] {
 		let modids = [];
@@ -261,19 +349,37 @@ const Dex = new class implements ModdedDex {
 		if (!gen) return this;
 		return this.mod(`gen${gen}` as ID);
 	}
+	formatGen(format: string) {
+		const formatid = toID(format);
+		if (!formatid) return Dex.gen;
+		if (!formatid.startsWith('gen')) return 6;
+		return parseInt(formatid.charAt(3)) || Dex.gen;
+	}
+	forFormat(format: string) {
+		let dex = Dex.forGen(Dex.formatGen(format));
+
+		const formatid = toID(format).slice(4);
+		if (dex.gen === 7 && formatid.includes('letsgo')) {
+			dex = Dex.mod('gen7letsgo' as ID);
+		}
+		if (dex.gen === 8 && formatid.includes('bdsp')) {
+			dex = Dex.mod('gen8bdsp' as ID);
+		}
+		return dex;
+	}
 
 	resolveAvatar(avatar: string): string {
 		if (window.BattleAvatarNumbers && avatar in BattleAvatarNumbers) {
 			avatar = BattleAvatarNumbers[avatar];
 		}
-		if (avatar.charAt(0) === '#') {
+		if (avatar.startsWith('#')) {
 			return Dex.resourcePrefix + 'sprites/trainers-custom/' + toID(avatar.substr(1)) + '.png';
 		}
 		if (avatar.includes('.') && window.Config?.server?.registered) {
 			// custom avatar served by the server
 			let protocol = (Config.server.port === 443) ? 'https' : 'http';
 			return protocol + '://' + Config.server.host + ':' + Config.server.port +
-				'/avatars/' + encodeURIComponent(avatar).replace(/\%3F/g, '?');
+				'/avatars/' + encodeURIComponent(avatar).replace(/%3F/g, '?');
 		}
 		return Dex.resourcePrefix + 'sprites/trainers/' + Dex.sanitizeName(avatar || 'unknown') + '.png';
 	}
@@ -297,14 +403,14 @@ const Dex = new class implements ModdedDex {
 	}
 
 	prefs(prop: string) {
-		// @ts-ignore
-		return window.Storage?.prefs?.(prop);
+		// @ts-expect-error this is what I get for calling it Storage...
+		return window.Storage?.prefs ? window.Storage.prefs(prop) : window.PS?.prefs?.[prop];
 	}
 
 	getShortName(name: string) {
 		let shortName = name.replace(/[^A-Za-z0-9]+$/, '');
-		if (shortName.indexOf('(') >= 0) {
-			shortName += name.slice(shortName.length).replace(/[^\(\)]+/g, '').replace(/\(\)/g, '');
+		if (shortName.includes('(')) {
+			shortName += name.slice(shortName.length).replace(/[^()]+/g, '').replace(/\(\)/g, '');
 		}
 		return shortName;
 	}
@@ -358,7 +464,7 @@ const Dex = new class implements ModdedDex {
 				};
 			}
 
-			if (!data) data = {exists: false};
+			if (!data) data = { exists: false };
 			let move = new Move(id, name, data);
 			if (move.exists) window.BattleMovedex[id] = move;
 			return move;
@@ -386,7 +492,7 @@ const Dex = new class implements ModdedDex {
 			if (!window.BattleItems) window.BattleItems = {};
 			let data = window.BattleItems[id];
 			if (data && typeof data.exists === 'boolean') return data;
-			if (!data) data = {exists: false};
+			if (!data) data = { exists: false };
 			let item = new Item(id, name, data);
 			if (item.exists) window.BattleItems[id] = item;
 			return item;
@@ -408,7 +514,7 @@ const Dex = new class implements ModdedDex {
 			if (!window.BattleAbilities) window.BattleAbilities = {};
 			let data = window.BattleAbilities[id];
 			if (data && typeof data.exists === 'boolean') return data;
-			if (!data) data = {exists: false};
+			if (!data) data = { exists: false };
 			let ability = new Ability(id, name, data);
 			if (ability.exists) window.BattleAbilities[id] = ability;
 			return ability;
@@ -444,13 +550,19 @@ const Dex = new class implements ModdedDex {
 			if (data && typeof data.exists === 'boolean') {
 				species = data;
 			} else {
-				if (!data) data = {exists: false};
-				if (!data.tier && id.slice(-5) === 'totem') {
+				if (!data) data = { exists: false };
+				if (!data.tier && id.endsWith('totem')) {
 					data.tier = this.species.get(id.slice(0, -5)).tier;
 				}
 				if (!data.tier && data.baseSpecies && toID(data.baseSpecies) !== id) {
 					data.tier = this.species.get(data.baseSpecies).tier;
 				}
+				data.nfe = data.id === 'dipplin' || !!(data as Species).evos?.some(evo => {
+					const evoSpecies = this.species.get(evo);
+					return !evoSpecies.isNonstandard || evoSpecies.isNonstandard === data.isNonstandard ||
+						// Pokemon with Hisui evolutions
+						evoSpecies.isNonstandard === "Unobtainable";
+				});
 				species = new Species(id, name, data);
 				if (species.exists) window.BattlePokedex[id] = species;
 			}
@@ -475,19 +587,20 @@ const Dex = new class implements ModdedDex {
 			return species;
 		},
 		// for species oms
-		getFromPokemon: (pokemon: Pokemon | ServerPokemon | PokemonSet): Species => {
-			const species = (pokemon as PokemonSet).species || (pokemon as (Pokemon | ServerPokemon)).speciesForme;
+		getFromPokemon: (pokemon: Pokemon | ServerPokemon | Dex.PokemonSet): Species => {
+			const species = (pokemon as Dex.PokemonSet).species || (pokemon as (Pokemon | ServerPokemon)).speciesForme;
 			return this.species.get(species);
 		},
 	};
 
 	types = {
 		allCache: null as Type[] | null,
+		namesCache: null as Dex.TypeName[] | null,
 		get: (type: any): Type => {
 			if (!type || typeof type === 'string') {
 				const id = toID(type) as string;
 				const name = id.substr(0, 1).toUpperCase() + id.substr(1);
-				type = (window.BattleTypeChart && window.BattleTypeChart[id]) || {};
+				type = window.BattleTypeChart?.[id] || {};
 				if (type.damageTaken) type.exists = true;
 				if (!type.id) type.id = id;
 				if (!type.name) type.name = name;
@@ -506,17 +619,23 @@ const Dex = new class implements ModdedDex {
 			if (types.length) this.types.allCache = types;
 			return types;
 		},
+		names: (): readonly Dex.TypeName[] => {
+			if (this.types.namesCache) return this.types.namesCache;
+			const names = this.types.all().map(type => type.name as Dex.TypeName);
+			names.splice(names.indexOf('Stellar'), 1);
+			if (names.length) this.types.namesCache = names;
+			return names;
+		},
 		isName: (name: string | null): boolean => {
 			const id = toID(name);
 			if (name !== id.substr(0, 1).toUpperCase() + id.substr(1)) return false;
-			return (window.BattleTypeChart || {}).hasOwnProperty(id);
+			return window.BattleTypeChart?.hasOwnProperty(id);
 		},
 	};
 
 	hasAbility(species: Species, ability: string) {
 		for (const i in species.abilities) {
-			// @ts-ignore
-			if (ability === species.abilities[i]) return true;
+			if (ability === species.abilities[i as '0']) return true;
 		}
 		return false;
 	}
@@ -527,7 +646,7 @@ const Dex = new class implements ModdedDex {
 
 		let path = $('script[src*="pokedex-mini.js"]').attr('src') || '';
 		let qs = '?' + (path.split('?')[1] || '');
-		path = (path.match(/.+?(?=data\/pokedex-mini\.js)/) || [])[0] || '';
+		path = ((/.+?(?=data\/pokedex-mini\.js)/.exec(path)) || [])[0] || '';
 
 		let el = document.createElement('script');
 		el.src = path + 'data/pokedex-mini-bw.js' + qs;
@@ -536,12 +655,12 @@ const Dex = new class implements ModdedDex {
 	getSpriteData(pokemon: Pokemon | Species | string, isFront: boolean, options: {
 		gen?: number,
 		shiny?: boolean,
-		gender?: GenderName,
+		gender?: Dex.GenderName,
 		afd?: boolean,
 		noScale?: boolean,
 		mod?: string,
 		dynamax?: boolean,
-	} = {gen: 6}) {
+	} = { gen: 6 }) {
 		const mechanicsGen = options.gen || 6;
 		let isDynamax = !!options.dynamax;
 		if (pokemon instanceof Pokemon) {
@@ -663,25 +782,6 @@ const Dex = new class implements ModdedDex {
 
 		if (options.shiny && mechanicsGen > 1) dir += '-shiny';
 
-		// April Fool's 2014
-		if (Dex.prefs('afd') !== false && (window.Config?.server?.afd || Dex.prefs('afd') || options.afd)) {
-			// Explicit false check above means AFD will be off if the user disables it - no matter what
-			dir = 'afd' + dir;
-			spriteData.url += dir + '/' + name + '.png';
-			// Duplicate code but needed to make AFD tinymax work
-			// April Fool's 2020
-			if (isDynamax && !options.noScale) {
-				spriteData.w *= 0.25;
-				spriteData.h *= 0.25;
-				spriteData.y += -22;
-			} else if (species.isTotem && !options.noScale) {
-				spriteData.w *= 0.5;
-				spriteData.h *= 0.5;
-				spriteData.y += -11;
-			}
-			return spriteData;
-		}
-
 		// Mod Cries
 		if (options.mod) {
 			spriteData.cryurl = `sprites/${options.mod}/audio/${toID(species.baseSpecies)}`;
@@ -692,7 +792,7 @@ const Dex = new class implements ModdedDex {
 		let allowAnim = !Dex.prefs('noanim') && !Dex.prefs('nogif');
 		if (allowAnim && spriteData.gen >= 6) spriteData.pixelated = false;
 		if (allowAnim && animationData[facing] && spriteData.gen >= 5) {
-			if (facing.slice(-1) === 'f') name += '-f';
+			if (facing.endsWith('f')) name += '-f';
 			dir = baseDir + 'ani' + dir;
 
 			spriteData.w = animationData[facing].w;
@@ -743,7 +843,7 @@ const Dex = new class implements ModdedDex {
 	getIFSpriteData(pokemon: Pokemon | Species | string, isFront: boolean, options: {
 		gen?: number,
 		shiny?: boolean,
-		gender?: GenderName,
+		gender?: Dex.GenderName,
 		afd?: boolean,
 		noScale?: boolean,
 		mod?: string,
@@ -854,7 +954,7 @@ const Dex = new class implements ModdedDex {
 		return num;
 	}
 
-	getPokemonIcon(pokemon: string | Pokemon | ServerPokemon | PokemonSet | null, facingLeft?: boolean) {
+	getPokemonIcon(pokemon: string | Pokemon | ServerPokemon | Dex.PokemonSet | null, facingLeft?: boolean) {
 		if (pokemon === 'pokeball') {
 			return `background:transparent url(${Dex.resourcePrefix}sprites/pokemonicons-pokeball-sheet.png) no-repeat scroll -0px 4px`;
 		} else if (pokemon === 'pokeball-statused') {
@@ -867,24 +967,25 @@ const Dex = new class implements ModdedDex {
 
 		let id = toID(pokemon);
 		if (!pokemon || typeof pokemon === 'string') pokemon = null;
-		// @ts-ignore
+		// @ts-expect-error safe, but too lazy to cast
 		if (pokemon?.speciesForme) id = toID(pokemon.speciesForme);
-		// @ts-ignore
+		// @ts-expect-error safe, but too lazy to cast
 		if (pokemon?.species) id = toID(pokemon.species);
-		// @ts-ignore
+		// @ts-expect-error safe, but too lazy to cast
 		if (pokemon?.volatiles?.formechange && !pokemon.volatiles.transform) {
-			// @ts-ignore
+			// @ts-expect-error safe, but too lazy to cast
 			id = toID(pokemon.volatiles.formechange[1]);
 		}
 		let num = this.getPokemonIconNum(id, pokemon?.gender === 'F', facingLeft);
 
 		let top = Math.floor(num / 12) * 30;
 		let left = (num % 12) * 40;
-		let fainted = ((pokemon as Pokemon | ServerPokemon)?.fainted ? `;opacity:.3;filter:grayscale(100%) brightness(.5)` : ``);
-		return `background:transparent url(${Dex.resourcePrefix}sprites/pokemonicons-sheet.png?v17) no-repeat scroll -${left}px -${top}px${fainted}`;
+		let fainted = ((pokemon as Pokemon | ServerPokemon)?.fainted ?
+			`;opacity:.3;filter:grayscale(100%) brightness(.5)` : ``);
+		return `background:transparent url(${Dex.resourcePrefix}sprites/pokemonicons-sheet.png?v18) no-repeat scroll -${left}px -${top}px${fainted}`;
 	}
 
-	getTeambuilderSpriteData(pokemon: any, gen: number = 0): TeambuilderSpriteData {
+	getTeambuilderSpriteData(pokemon: any, gen = 0): TeambuilderSpriteData {
 		let id = toID(pokemon.species);
 		let spriteid = pokemon.spriteid;
 		let species = Dex.species.get(pokemon.species);
@@ -1002,7 +1103,7 @@ const Dex = new class implements ModdedDex {
 		const data = (pokemon.isIF && !Dex.prefs('noif')) ? this.getIFTeambuilderSpriteData(pokemon, gen) : this.getTeambuilderSpriteData(pokemon, gen);
 		if (pokemon.isIF && data.shiny) return data.spriteid.split('/')[1];
 		const shiny = (data.shiny ? '-shiny' : '');
-		return 'background-image:url(' + Dex.resourcePrefix + data.spriteDir + shiny + '/' + data.spriteid + '.png);background-position:' + data.x + 'px ' + data.y + 'px;background-repeat:no-repeat';
+		return `background-image:url(${Dex.resourcePrefix}${data.spriteDir}${shiny}/${data.spriteid}.png);background-position:${data.x}px ${data.y}px;background-repeat:no-repeat`;
 	}
 
 	getItemIcon(item: any) {
@@ -1012,7 +1113,7 @@ const Dex = new class implements ModdedDex {
 
 		let top = Math.floor(num / 16) * 24;
 		let left = (num % 16) * 24;
-		return 'background:transparent url(' + Dex.resourcePrefix + 'sprites/itemicons-sheet.png?v1) no-repeat scroll -' + left + 'px -' + top + 'px';
+		return `background:transparent url(${Dex.resourcePrefix}sprites/itemicons-sheet.png?v1) no-repeat scroll -${left}px -${top}px`;
 	}
 
 	getTypeIcon(type: string | null, b?: boolean) { // b is just for utilichart.js
@@ -1042,7 +1143,7 @@ const Dex = new class implements ModdedDex {
 		if (this.pokeballs) return this.pokeballs;
 		this.pokeballs = [];
 		if (!window.BattleItems) window.BattleItems = {};
-		for (const data of Object.values(window.BattleItems) as AnyObject[]) {
+		for (const data of Object.values<AnyObject>(window.BattleItems)) {
 			if (!data.isPokeball) continue;
 			this.pokeballs.push(data.name);
 		}
@@ -1073,7 +1174,7 @@ const Dex = new class implements ModdedDex {
 	}
 
 	getItemSet() {
-		let table = BattleTeambuilderTable;
+		let table = window.BattleTeambuilderTable;
 		if (!table.itemSet) {
 			table.itemSet = table.items.map((r: any) => {
 				if (typeof r === 'string') {
@@ -1147,7 +1248,7 @@ const Dex = new class implements ModdedDex {
 		}
 		return false;
 	}
-	getLearnsetMoves(pokemon: PokemonSet) {
+	getLearnsetMoves(pokemon: Dex.PokemonSet) {
 		const moveDex = window.BattleMovedex;
 		const moves: string[] = [];
 		for (const id in moveDex) {
@@ -1165,15 +1266,15 @@ const Dex = new class implements ModdedDex {
 	}
 };
 
-class ModdedDex {
+export class ModdedDex {
 	readonly gen: number;
 	readonly modid: ID[];
 	readonly cache = {
-		Moves: {} as any as {[k: string]: Move},
-		Items: {} as any as {[k: string]: Item},
-		Abilities: {} as any as {[k: string]: Ability},
-		Species: {} as any as {[k: string]: Species},
-		Types: {} as any as {[k: string]: Effect},
+		Moves: {} as { [k: string]: Move },
+		Items: {} as { [k: string]: Item },
+		Abilities: {} as { [k: string]: Ability },
+		Species: {} as { [k: string]: Species },
+		Types: {} as { [k: string]: Dex.Effect },
 	};
 	pokeballs: string[] | null = null;
 	constructor(modids: ID[]) {
@@ -1189,7 +1290,7 @@ class ModdedDex {
 			}
 			if (this.cache.Moves.hasOwnProperty(id)) return this.cache.Moves[id];
 
-			let data = {...Dex.moves.get(name)};
+			let data = { ...Dex.moves.get(name) };
 
 			for (let i = Dex.gen - 1; i >= this.gen; i--) {
 				const table = window.BattleTeambuilderTable[`gen${i}`];
@@ -1219,7 +1320,7 @@ class ModdedDex {
 			}
 			if (this.cache.Items.hasOwnProperty(id)) return this.cache.Items[id];
 
-			let data = {...Dex.items.get(name)};
+			let data = { ...Dex.items.get(name) };
 
 			for (let i = Dex.gen - 1; i >= this.gen; i--) {
 				const table = window.BattleTeambuilderTable[`gen${i}`];
@@ -1246,7 +1347,7 @@ class ModdedDex {
 			}
 			if (this.cache.Abilities.hasOwnProperty(id)) return this.cache.Abilities[id];
 
-			let data = {...Dex.abilities.get(name)};
+			let data = { ...Dex.abilities.get(name) };
 
 			for (let i = Dex.gen - 1; i >= this.gen; i--) {
 				const table = window.BattleTeambuilderTable[`gen${i}`];
@@ -1273,7 +1374,7 @@ class ModdedDex {
 			}
 			if (this.cache.Species.hasOwnProperty(id)) return this.cache.Species[id];
 
-			let data = {...Dex.species.get(name)};
+			let data = { ...Dex.species.get(name) };
 
 			for (let i = Dex.gen - 1; i >= this.gen; i--) {
 				const table = window.BattleTeambuilderTable[`gen${i}`];
@@ -1294,39 +1395,58 @@ class ModdedDex {
 				data.tier = this.species.get(data.baseSpecies).tier;
 			}
 			if (data.gen > this.gen) data.tier = 'Illegal';
+			data.nfe = data.id === 'dipplin' || !!data.evos?.some(evo => {
+				const evoSpecies = this.species.get(evo);
+				return !evoSpecies.isNonstandard || evoSpecies.isNonstandard === data.isNonstandard ||
+					// Pokemon with Hisui evolutions
+					evoSpecies.isNonstandard === "Unobtainable";
+			});
 
 			const species = new Species(id, name, data);
 			if (species.exists) this.cache.Species[id] = species;
 			return species;
 		},
 		// for species oms
-		getFromPokemon: (pokemon: Pokemon | ServerPokemon | PokemonSet, extra?: any): Species => {
+		getFromPokemon: (pokemon: Pokemon | ServerPokemon | Dex.PokemonSet, extra?: any): Species => {
 			for (const mid of this.modid) {
 				if (ModModifier[mid]?.ModifySpecies) return ModModifier[mid].ModifySpecies!(pokemon, this, extra);
 			}
-			const species = (pokemon as PokemonSet).species || (pokemon as (Pokemon | ServerPokemon)).speciesForme;
+			const species = (pokemon as Dex.PokemonSet).species || (pokemon as (Pokemon | ServerPokemon)).speciesForme;
 			return this.species.get(species);
 		},
 	};
 
 	types = {
-		get: (name: string): Effect => {
-			const id = toID(name) as ID;
+		namesCache: null as readonly Dex.TypeName[] | null,
+		names: (): readonly Dex.TypeName[] => {
+			if (this.types.namesCache) return this.types.namesCache;
+			const names = Dex.types.names();
+			if (!names.length) return [];
+			const curNames = [...names];
+			// if (this.gen < 9) curNames.splice(curNames.indexOf('Stellar'), 1);
+			if (this.gen < 6) curNames.splice(curNames.indexOf('Fairy'), 1);
+			if (this.gen < 2) curNames.splice(curNames.indexOf('Dark'), 1);
+			if (this.gen < 2) curNames.splice(curNames.indexOf('Steel'), 1);
+			this.types.namesCache = curNames;
+			return curNames;
+		},
+		get: (name: string): Dex.Type => {
+			const id = toID(name);
 			name = id.substr(0, 1).toUpperCase() + id.substr(1);
 
 			if (this.cache.Types.hasOwnProperty(id)) return this.cache.Types[id];
 
-			let data = {...Dex.types.get(name)};
+			let data = { ...Dex.types.get(name) };
 
 			for (let i = 7; i >= this.gen; i--) {
-				const table = window.BattleTeambuilderTable['gen' + i];
+				const table = window.BattleTeambuilderTable[`gen${i}`];
 				if (id in table.removeType) {
 					data.exists = false;
 					// don't bother correcting its attributes given it doesn't exist
 					break;
 				}
 				if (id in table.overrideTypeChart) {
-					data = {...data, ...table.overrideTypeChart[id]};
+					data = { ...data, ...table.overrideTypeChart[id] };
 				}
 			}
 			for (const mid of this.modid) {
@@ -1342,7 +1462,7 @@ class ModdedDex {
 		if (this.pokeballs) return this.pokeballs;
 		this.pokeballs = [];
 		if (!window.BattleItems) window.BattleItems = {};
-		for (const data of Object.values(window.BattleItems) as AnyObject[]) {
+		for (const data of Object.values<AnyObject>(window.BattleItems)) {
 			if (data.gen && data.gen > this.gen) continue;
 			if (!data.isPokeball) continue;
 			this.pokeballs.push(data.name);
@@ -1415,7 +1535,7 @@ class ModdedDex {
 	}
 
 	getItemSet() {
-		let table = BattleTeambuilderTable;
+		let table = window.BattleTeambuilderTable;
 		const petmods = ['natdex', 'gen8bdsp', 'digimon', 'metronome'];
 		for (const mid of this.modid) {
 			if (!petmods.includes(mid)) continue;
@@ -1512,7 +1632,7 @@ class ModdedDex {
 		}
 		return false;
 	}
-	getLearnsetMoves(pokemon: PokemonSet) {
+	getLearnsetMoves(pokemon: Dex.PokemonSet) {
 		const moveDex = this.getMovedex();
 		let moves: string[] = [];
 		for (const id in moveDex) {
@@ -1548,9 +1668,9 @@ const ModModifier: {
 		abilitiesMod?: (data: any, extra?: any) => any,
 		speciesMod?: (data: any, extra?: any) => any,
 		typesMod?: (data: any, extra?: any) => any,
-		ModifySpecies?: (pokemon: Pokemon | ServerPokemon | PokemonSet, dex: ModdedDex, extra?: any) => Species,
+		ModifySpecies?: (pokemon: Pokemon | ServerPokemon | Dex.PokemonSet, dex: ModdedDex, extra?: any) => Species,
 		ModifyTierSet?: (tierSet: SearchRow[], dex: ModdedDex, extra?: any) => SearchRow[],
-		ModifyLearnset?: (pokemon: PokemonSet, dex: ModdedDex, learnset: string[], extra?: any) => string[],
+		ModifyLearnset?: (pokemon: Dex.PokemonSet, dex: ModdedDex, learnset: string[], extra?: any) => string[],
 	}
 } = {
 	// regulars
@@ -1632,7 +1752,7 @@ const ModModifier: {
 	},
 	hackmons: {
 		ModifyTierSet: (tierSet: SearchRow[], dex: ModdedDex, extra?: any): SearchRow[] => tierSet,
-		ModifyLearnset: (pokemon: PokemonSet, dex: ModdedDex, learnset: string[]): string[] => {
+		ModifyLearnset: (pokemon: Dex.PokemonSet, dex: ModdedDex, learnset: string[]): string[] => {
 			const moveDex = dex.getMovedex();
 			const isNatDex = dex.modid.includes('natdex' as ID);
 			const isLGPE = dex.modid.includes('gen7letsgo' as ID);
@@ -1701,7 +1821,7 @@ const ModModifier: {
 		ModifyTierSet: (tierSet: SearchRow[], dex: ModdedDex, extra?: any): SearchRow[] => tierSet,
 	},
 	stabmons: {
-		ModifyLearnset: (pokemon: PokemonSet, dex: ModdedDex, learnset: string[]): string[] => {
+		ModifyLearnset: (pokemon: Dex.PokemonSet, dex: ModdedDex, learnset: string[]): string[] => {
 			const moveDex = dex.getMovedex();
 			const isNatDex = dex.modid.includes('natdex' as ID);
 			const isLGPE = dex.modid.includes('gen7letsgo' as ID);
@@ -1766,7 +1886,7 @@ const ModModifier: {
 		},
 		speciesMod: (data: any): any => {
 			if (!data.exists) return;
-			data.types = Array.from(new Set(data.types.map((type: TypeName) => (
+			data.types = Array.from(new Set(data.types.map((type: Dex.TypeName) => (
 				type.replace(/(Ghost|Fairy)/g, 'Psychic')
 					.replace(/Bug/g, 'Grass')
 					.replace(/Ice/g, 'Water')
@@ -1778,11 +1898,11 @@ const ModModifier: {
 	},
 	// species oms
 	createmons: {
-		ModifySpecies: (pokemon: Pokemon | ServerPokemon | PokemonSet, dex: ModdedDex, extra?: any): Species => {
-			const species = dex.species.get((pokemon as Pokemon | ServerPokemon).speciesForme || (pokemon as PokemonSet).species);
+		ModifySpecies: (pokemon: Pokemon | ServerPokemon | Dex.PokemonSet, dex: ModdedDex, extra?: any): Species => {
+			const species = dex.species.get((pokemon as Pokemon | ServerPokemon).speciesForme || (pokemon as Dex.PokemonSet).species);
 			// in Teambuilder
-			let evs = (pokemon as PokemonSet).evs;
-			let types = [(pokemon as PokemonSet).hpType, (pokemon as PokemonSet).teraType];
+			let evs = (pokemon as Dex.PokemonSet).evs;
+			let types = [(pokemon as Dex.PokemonSet).hpType, (pokemon as Dex.PokemonSet).teraType];
 			// in Battle
 			if (!evs) {
 				const details = (pokemon as Pokemon | ServerPokemon).details;
@@ -1790,7 +1910,7 @@ const ModModifier: {
 				if (crtmInfo) {
 					evs = {hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0};
 					const evsArray = crtmInfo.split(',').slice(0, 6).map(Number);
-					let i: StatName;
+					let i: Dex.StatName;
 					for (i in evs) evs[i] = evsArray.shift() || 0;
 					types = crtmInfo.split(',').slice(6);
 				}
@@ -1809,7 +1929,7 @@ const ModModifier: {
 			}
 			return tierSet.concat(addedTierSet);
 		},
-		ModifyLearnset: (pokemon: PokemonSet, dex: ModdedDex, learnset: string[]): string[] => {
+		ModifyLearnset: (pokemon: Dex.PokemonSet, dex: ModdedDex, learnset: string[]): string[] => {
 			const moveDex = dex.getMovedex();
 			const moves: string[] = [];
 			for (const id in moveDex) {
@@ -1835,10 +1955,10 @@ const ModModifier: {
 		},
 	},
 	crossevolution: {
-		ModifySpecies: (pokemon: Pokemon | ServerPokemon | PokemonSet, dex: ModdedDex, extra?: any): Species => {
+		ModifySpecies: (pokemon: Pokemon | ServerPokemon | Dex.PokemonSet, dex: ModdedDex, extra?: any): Species => {
 			const nameString = pokemon.name || '';
 			// note that you can't know ur opponent pokemon's nickname before it is sent in
-			const speciesString = (pokemon as PokemonSet).species || (pokemon as (Pokemon | ServerPokemon)).speciesForme;
+			const speciesString = (pokemon as Dex.PokemonSet).species || (pokemon as (Pokemon | ServerPokemon)).speciesForme;
 			const species = dex.species.get(speciesString);
 			if (nameString !== speciesString) {
 				const crossSpecies = dex.species.get(nameString);
@@ -1847,7 +1967,7 @@ const ModModifier: {
 					if (!crossPrevoSpecies.prevo === !species.prevo) {
 						const mixedSpecies = {...species};
 						mixedSpecies.bst = 0;
-						let stat: StatName;
+						let stat: Dex.StatName;
 						let newStats = {...mixedSpecies.baseStats};
 						for (stat in mixedSpecies.baseStats) {
 							newStats[stat] += crossSpecies.baseStats[stat] - crossPrevoSpecies.baseStats[stat];
@@ -1868,7 +1988,7 @@ const ModModifier: {
 			}
 			return species;
 		},
-		ModifyLearnset: (pokemon: PokemonSet, dex: ModdedDex, learnset: string[]): string[] => {
+		ModifyLearnset: (pokemon: Dex.PokemonSet, dex: ModdedDex, learnset: string[]): string[] => {
 			const name = pokemon.name || '';
 			const crossSpecies = dex.species.get(name);
 			if (!crossSpecies.exists) return learnset;
@@ -1881,7 +2001,7 @@ const ModModifier: {
 		},
 	},
 	infinitefusion: {
-		ModifySpecies: (pokemon: Pokemon | ServerPokemon | PokemonSet, dex: ModdedDex, extra?: any): Species => {
+		ModifySpecies: (pokemon: Pokemon | ServerPokemon | Dex.PokemonSet, dex: ModdedDex, extra?: any): Species => {
 			let name = '';
 			// tips: ServerPokemon is what you know about your opponent's pokemon
 			if ((pokemon as Pokemon | ServerPokemon).details) {
@@ -1891,7 +2011,7 @@ const ModModifier: {
 			if (name === '') { // teambuilder & mySidePokemon when TeamPreview
 				name = pokemon.name || '';
 			}
-			const species = (pokemon as PokemonSet).species || (pokemon as (Pokemon | ServerPokemon)).speciesForme;
+			const species = (pokemon as Dex.PokemonSet).species || (pokemon as (Pokemon | ServerPokemon)).speciesForme;
 			const headSpecies = dex.species.get(name);
 			const bodySpecies = dex.species.get(species);
 			if (!headSpecies.exists || !bodySpecies.exists) return new Species(bodySpecies.id, bodySpecies.name, {...bodySpecies});
@@ -1959,7 +2079,7 @@ const ModModifier: {
 			if (abilities[1] === abilities[0]) delete abilities[1];
 			fusionSpecies.abilities = abilities;
 			fusionSpecies.bst = 0;
-			let i: StatName;
+			let i: Dex.StatName;
 			let newStats = {...fusionSpecies.baseStats};
 			for (i in fusionSpecies.baseStats) {
 				let headStat, bodyStat;
@@ -1973,7 +2093,7 @@ const ModModifier: {
 				let stat = Math.floor((headStat + bodyStat) / 3);
 				if (stat < 1) stat = 1;
 				if (stat > 255) stat = 255;
-				if (i === 'hp' && (pokemon as PokemonSet).ability === 'Wonder Guard') stat = 1;
+				if (i === 'hp' && (pokemon as Dex.PokemonSet).ability === 'Wonder Guard') stat = 1;
 				newStats[i] = stat;
 				fusionSpecies.bst += stat;
 			}
@@ -1993,7 +2113,7 @@ const ModModifier: {
 				return true;
 			}
 		),
-		ModifyLearnset: (pokemon: PokemonSet, dex: ModdedDex, learnset: string[]): string[] => {
+		ModifyLearnset: (pokemon: Dex.PokemonSet, dex: ModdedDex, learnset: string[]): string[] => {
 			const name = pokemon.name || '';
 			const headSpecies = dex.species.get(name);
 			if (!headSpecies.exists) return learnset;
@@ -2119,7 +2239,7 @@ const ModModifier: {
 				data = {...typeData};
 			}
 		},
-		ModifyLearnset: (pokemon: PokemonSet, dex: ModdedDex, learnset: string[]): string[] => {
+		ModifyLearnset: (pokemon: Dex.PokemonSet, dex: ModdedDex, learnset: string[]): string[] => {
 			if (!pokemon.preEvo) return learnset;
 			const preEvoSpecies = dex.species.get(pokemon.preEvo);
 			const moveDex = dex.getMovedex();
@@ -2133,7 +2253,7 @@ const ModModifier: {
 	},
 };
 
-const Teams = new class {
+export const Teams = new class {
 	unpack(buf: string) {
 		if (!buf) return [];
 
@@ -2142,7 +2262,7 @@ const Teams = new class {
 		let j = 0;
 
 		while (true) {
-			const set: PokemonSet = {} as any;
+			const set: Dex.PokemonSet = {} as any;
 			team.push(set);
 
 			// name
@@ -2170,14 +2290,14 @@ const Teams = new class {
 
 			// moves
 			j = buf.indexOf('|', i);
-			set.moves = buf.substring(i, j).split(',').map(function (moveid) {
-				return Dex.moves.get(moveid).name;
-			});
+			set.moves = buf.substring(i, j).split(',').map(
+				moveid => Dex.moves.get(moveid).name
+			);
 			i = j + 1;
 
 			// nature
 			j = buf.indexOf('|', i);
-			set.nature = buf.substring(i, j) as NatureName;
+			set.nature = buf.substring(i, j) as Dex.NatureName;
 			if (set.nature as any === 'undefined') delete set.nature;
 			i = j + 1;
 
@@ -2196,7 +2316,7 @@ const Teams = new class {
 						spe: Number(evs[5]) || 0,
 					};
 				} else if (evstring === '0') {
-					set.evs = {hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0};
+					set.evs = { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
 				}
 			}
 			i = j + 1;
@@ -2254,45 +2374,45 @@ const Teams = new class {
 
 		return team;
 	}
-	export(team: PokemonSet[] | string, gen: number, hidestats = false) {
+	export(team: Dex.PokemonSet[] | string, gen: number, hidestats = false) {
 		if (!team) return '';
 		if (typeof team === 'string') {
-			if (team.indexOf('\n') >= 0) return team;
+			if (team.includes('\n')) return team;
 			team = this.unpack(team);
 		}
 		let text = '';
 		for (const curSet of team) {
 			if (curSet.name && curSet.name !== curSet.species) {
-				text += '' + curSet.name + ' (' + curSet.species + ')';
+				text += `${curSet.name} (${curSet.species})`;
 			} else {
-				text += '' + curSet.species;
+				text += `${curSet.species}`;
 			}
 			if (curSet.gender === 'M') text += ' (M)';
 			if (curSet.gender === 'F') text += ' (F)';
 			if (curSet.item) {
-				text += ' @ ' + curSet.item;
+				text += ` @ ${curSet.item}`;
 			}
 			text += "  \n";
 			if (curSet.ability) {
-				text += 'Ability: ' + curSet.ability + "  \n";
+				text += `Ability: ${curSet.ability}  \n`;
 			}
 			if (curSet.level && curSet.level !== 100) {
-				text += 'Level: ' + curSet.level + "  \n";
+				text += `Level: ${curSet.level}  \n`;
 			}
 			if (curSet.shiny) {
 				text += 'Shiny: Yes  \n';
 			}
 			if (typeof curSet.happiness === 'number' && curSet.happiness !== 255 && !isNaN(curSet.happiness)) {
-				text += 'Happiness: ' + curSet.happiness + "  \n";
+				text += `Happiness: ${curSet.happiness}  \n`;
 			}
 			if (curSet.pokeball) {
-				text += 'Pokeball: ' + curSet.pokeball + "  \n";
+				text += `Pokeball: ${curSet.pokeball}  \n`;
 			}
 			if (curSet.hpType) {
-				text += 'Hidden Power: ' + curSet.hpType + "  \n";
+				text += `Hidden Power: ${curSet.hpType}  \n`;
 			}
 			if (typeof curSet.dynamaxLevel === 'number' && curSet.dynamaxLevel !== 10 && !isNaN(curSet.dynamaxLevel)) {
-				text += 'Dynamax Level: ' + curSet.dynamaxLevel + "  \n";
+				text += `Dynamax Level: ${curSet.dynamaxLevel}  \n`;
 			}
 			if (curSet.gigantamax) {
 				text += 'Gigantamax: Yes  \n';
@@ -2300,7 +2420,8 @@ const Teams = new class {
 			if (gen === 9) {
 				const species = Dex.species.get(curSet.species);
 				// no check forceTeraType for bc
-				text += 'Tera Type: ' + (/*species.forceTeraType || */curSet.teraType || species.types[0]) + "  \n";
+				// text += `Tera Type: ${species.forceTeraType || curSet.teraType || species.types[0]}  \n`;
+				text += `Tera Type: ${curSet.teraType || species.types[0]}  \n`;
 			}
 			if (curSet.preEvo) {
 				text += 'Pre-Evolution: ' + curSet.preEvo + "  \n";
@@ -2308,7 +2429,7 @@ const Teams = new class {
 			if (!hidestats) {
 				let first = true;
 				if (curSet.evs) {
-					let j: StatName;
+					let j: Dex.StatName;
 					for (j in BattleStatNames) {
 						if (!curSet.evs[j]) continue;
 						if (first) {
@@ -2317,14 +2438,14 @@ const Teams = new class {
 						} else {
 							text += ' / ';
 						}
-						text += '' + curSet.evs[j] + ' ' + BattleStatNames[j];
+						text += `${curSet.evs[j]!} ${BattleStatNames[j]}`;
 					}
 				}
 				if (!first) {
 					text += "  \n";
 				}
 				if (curSet.nature) {
-					text += '' + curSet.nature + ' Nature' + "  \n";
+					text += `${curSet.nature} Nature  \n`;
 				}
 				first = true;
 				if (curSet.ivs) {
@@ -2337,7 +2458,7 @@ const Teams = new class {
 								alert(move + " is not a valid Hidden Power type.");
 								continue;
 							}
-							let stat: StatName;
+							let stat: Dex.StatName;
 							for (stat in BattleStatNames) {
 								if ((curSet.ivs[stat] === undefined ? 31 : curSet.ivs[stat]) !== (Dex.types.get(hpType).HPivs?.[stat] || 31)) {
 									defaultIvs = false;
@@ -2347,7 +2468,7 @@ const Teams = new class {
 						}
 					}
 					if (defaultIvs && !hpType) {
-						let stat: StatName;
+						let stat: Dex.StatName;
 						for (stat in BattleStatNames) {
 							if (curSet.ivs[stat] !== 31 && curSet.ivs[stat] !== undefined) {
 								defaultIvs = false;
@@ -2356,7 +2477,7 @@ const Teams = new class {
 						}
 					}
 					if (!defaultIvs) {
-						let stat: StatName;
+						let stat: Dex.StatName;
 						for (stat in BattleStatNames) {
 							if (typeof curSet.ivs[stat] === 'undefined' || isNaN(curSet.ivs[stat]) || curSet.ivs[stat] === 31) continue;
 							if (first) {
@@ -2365,7 +2486,7 @@ const Teams = new class {
 							} else {
 								text += ' / ';
 							}
-							text += '' + curSet.ivs[stat] + ' ' + BattleStatNames[stat];
+							text += `${curSet.ivs[stat]} ${BattleStatNames[stat]}`;
 						}
 					}
 				}
@@ -2375,11 +2496,11 @@ const Teams = new class {
 			}
 			if (curSet.moves) {
 				for (let move of curSet.moves) {
-					if (move.substr(0, 13) === 'Hidden Power ') {
-						move = move.substr(0, 13) + '[' + move.substr(13) + ']';
+					if (move.startsWith('Hidden Power ')) {
+						move = `${move.slice(0, 13)}[${move.slice(13)}]`;
 					}
 					if (move) {
-						text += '- ' + move + "  \n";
+						text += `- ${move}  \n`;
 					}
 				}
 			}
@@ -2391,6 +2512,6 @@ const Teams = new class {
 
 if (typeof require === 'function') {
 	// in Node
-	(global as any).Dex = Dex;
-	(global as any).toID = toID;
+	global.Dex = Dex;
+	global.toID = toID;
 }

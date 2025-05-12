@@ -56,7 +56,7 @@
 			e.preventDefault();
 			e.stopPropagation();
 			var name = $(e.currentTarget).data('name');
-			app.addPopup(UserPopup, {name: name, sourceEl: e.currentTarget});
+			app.addPopup(UserPopup, { name: name, sourceEl: e.currentTarget });
 		},
 		toggleMute: function () {
 			var muted = !Dex.prefs('mute');
@@ -119,7 +119,7 @@
 				if (room.title && room.title.charAt(0) === '[') {
 					var closeBracketIndex = room.title.indexOf(']');
 					if (closeBracketIndex > 0) {
-						return buf + ' draggable="true"><i class="text">' + BattleLog.escapeFormat(room.title.slice(1, closeBracketIndex)) + '</i><span>' + BattleLog.escapeHTML(room.title.slice(closeBracketIndex + 1)) + '</span></a><button class="closebutton" name="closeRoom" value="' + id + '" aria-label="Close"><i class="fa fa-times-circle"></i></a></li>';
+						return buf + ' draggable="true"><i class="text">' + BattleLog.escapeHTML(room.title.slice(1, closeBracketIndex)) + '</i><span>' + BattleLog.escapeHTML(room.title.slice(closeBracketIndex + 1)) + '</span></a><button class="closebutton" name="closeRoom" value="' + id + '" aria-label="Close"><i class="fa fa-times-circle"></i></a></li>';
 					}
 				}
 				return buf + ' draggable="true"><i class="fa fa-file-text-o"></i> <span>' + (BattleLog.escapeHTML(room.title) || id) + '</span></a><button class="closebutton" name="closeRoom" value="' + id + '" aria-label="Close"><i class="fa fa-times-circle"></i></a></li>';
@@ -224,7 +224,7 @@
 			e.preventDefault();
 			var $target = $(e.currentTarget);
 			if ($target.hasClass('minilogo')) {
-				app.addPopup(TabListPopup, {sourceEl: e.currentTarget});
+				app.addPopup(TabListPopup, { sourceEl: e.currentTarget });
 				return;
 			}
 			var id = $target.attr('href');
@@ -545,7 +545,7 @@
 				"हिंदी": 'hindi',
 				"日本語": 'japanese',
 				"简体中文": 'simplifiedchinese',
-				"中文": 'traditionalchinese',
+				"中文": 'traditionalchinese'
 			};
 			buf += '<p><label class="optlabel">Language: <select name="language" class="button">';
 			for (var name in possibleLanguages) {
@@ -883,7 +883,7 @@
 				popup.$('.cur').removeClass('cur');
 				Storage.bg.set(e.target.result, 'custom');
 			} else {
-				app.addPopup(ConfirmBackgroundPopup, {bgUrl: e.target.result});
+				app.addPopup(ConfirmBackgroundPopup, { bgUrl: e.target.result });
 			}
 		};
 		reader.readAsDataURL(file);

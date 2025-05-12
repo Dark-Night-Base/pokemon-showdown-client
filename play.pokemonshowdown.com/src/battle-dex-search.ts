@@ -11,11 +11,13 @@
  * @license MIT
  */
 
-type SearchType = (
+import { Dex, type ModdedDex, toID, type ID } from "./battle-dex";
+
+export type SearchType = (
 	'pokemon' | 'type' | 'tier' | 'move' | 'item' | 'ability' | 'egggroup' | 'category' | 'article'
 );
 
-type SearchRow = (
+export type SearchRow = (
 	[SearchType, ID, number?, number?] | ['sortpokemon' | 'sortmove', ''] | ['header' | 'html', string]
 );
 
@@ -33,7 +35,7 @@ declare const DigimonTable: any;
 /**
  * Backend for search UIs.
  */
-class DexSearch {
+export class DexSearch {
 	query = '';
 
 	/**
@@ -44,6 +46,7 @@ class DexSearch {
 	typedSearch: BattleTypedSearch<SearchType> | null = null;
 
 	results: SearchRow[] | null = null;
+	prependResults: SearchRow[] | null = null;
 	exactMatch = false;
 
 	static typeTable = {
@@ -58,7 +61,7 @@ class DexSearch {
 		article: 9,
 	};
 	static typeName = {
-		pokemon: 'Pok&eacute;mon',
+		pokemon: 'Pok\u00e9mon',
 		type: 'Type',
 		tier: 'Tiers',
 		move: 'Moves',
@@ -88,7 +91,7 @@ class DexSearch {
 		this.setType(searchType, formatid, species);
 	}
 
-	getTypedSearch(searchType: SearchType | '', format = '' as ID, speciesOrSet: ID | PokemonSet = '' as ID) {
+	getTypedSearch(searchType: SearchType | '', format = '' as ID, speciesOrSet: ID | Dex.PokemonSet = '' as ID) {
 		if (!searchType) return null;
 		switch (searchType) {
 		case 'pokemon': return new BattlePokemonSearch('pokemon', format, speciesOrSet);
@@ -109,13 +112,16 @@ class DexSearch {
 		this.query = query;
 		if (!query) {
 			this.results = this.typedSearch?.getResults(this.filters, this.sortCol, this.reverseSort) || [];
+			if (!this.filters && !this.sortCol && this.prependResults) {
+				this.results = [...this.prependResults, ...this.results];
+			}
 		} else {
 			this.results = this.textSearch(query);
 		}
 		return true;
 	}
 
-	setType(searchType: SearchType | '', format = '' as ID, speciesOrSet: ID | PokemonSet = '' as ID) {
+	setType(searchType: SearchType | '', format = '' as ID, speciesOrSet: ID | Dex.PokemonSet = '' as ID) {
 		// invalidate caches
 		this.results = null;
 
@@ -127,13 +133,28 @@ class DexSearch {
 		if (this.typedSearch) this.dex = this.typedSearch.dex;
 	}
 
-	addFilter(entry: SearchFilter): boolean {
+	capitalizeFirst(str: string) {
+		return str.charAt(0).toUpperCase() + str.slice(1);
+	}
+	addFilter(entry: SearchFilter | SearchRow): boolean {
 		if (!this.typedSearch) return false;
 		let [type] = entry;
 		if (this.typedSearch.searchType === 'pokemon') {
 			if (type === this.sortCol) this.sortCol = null;
 			if (!['type', 'move', 'ability', 'egggroup', 'tier'].includes(type)) return false;
+			if (type === 'type') entry[1] = this.capitalizeFirst(entry[1]);
 			if (type === 'move') entry[1] = toID(entry[1]);
+			if (type === 'ability') entry[1] = this.dex.abilities.get(entry[1]).name;
+			if (type === 'tier') {
+				// very hardcode
+				const tierTable: { [id: string]: string } = {
+					uber: "Uber",
+					caplc: "CAP LC",
+					capnfe: "CAP NFE",
+				};
+				entry[1] = toID(entry[1]);
+				entry[1] = tierTable[entry[1]] || entry[1].toUpperCase();
+			}
 			if (!this.filters) this.filters = [];
 			this.results = null;
 			for (const filter of this.filters) {
@@ -141,14 +162,16 @@ class DexSearch {
 					return true;
 				}
 			}
-			this.filters.push(entry);
+			this.filters.push(entry.slice(0, 2) as SearchFilter);
 			return true;
 		} else if (this.typedSearch.searchType === 'move') {
 			if (type === this.sortCol) this.sortCol = null;
 			if (!['type', 'category', 'pokemon'].includes(type)) return false;
+			if (type === 'type') entry[1] = this.capitalizeFirst(entry[1]);
+			if (type === 'category') entry[1] = this.capitalizeFirst(entry[1]);
 			if (type === 'pokemon') entry[1] = toID(entry[1]);
 			if (!this.filters) this.filters = [];
-			this.filters.push(entry);
+			this.filters.push(entry.slice(0, 2) as SearchFilter);
 			this.results = null;
 			return true;
 		}
@@ -202,7 +225,7 @@ class DexSearch {
 		return this.typedSearch?.illegalReasons?.[id] || null;
 	}
 
-	getTier(species: Species) {
+	getTier(species: Dex.Species) {
 		return this.typedSearch?.getTier(species) || '';
 	}
 
@@ -248,7 +271,7 @@ class DexSearch {
 
 		/** searching for "Psychic type" will make the type come up over the move */
 		let qFilterType: 'type' | '' = '';
-		if (query.slice(-4) === 'type') {
+		if (query.endsWith('type')) {
 			if (query.slice(0, -4) in window.BattleTypeChart) {
 				query = query.slice(0, -4);
 				qFilterType = 'type';
@@ -296,7 +319,7 @@ class DexSearch {
 		// the alias text before any other passes.
 		let queryAlias;
 		if (query in BattleAliases) {
-			if (['sub', 'tr'].includes(query) || toID(BattleAliases[query]).slice(0, query.length) !== query) {
+			if (['sub', 'tr'].includes(query) || !toID(BattleAliases[query]).startsWith(query)) {
 				queryAlias = toID(BattleAliases[query]);
 				let aliasPassType: SearchPassType = (queryAlias === 'hiddenpower' ? 'exact' : 'normal');
 				searchPasses.unshift([aliasPassType, closest(queryAlias), queryAlias]);
@@ -491,8 +514,8 @@ class DexSearch {
 		if (searchType === 'pokemon') {
 			switch (fType) {
 			case 'type':
-				let type = fId.charAt(0).toUpperCase() + fId.slice(1) as TypeName;
-				buf.push(['header', `${type}-type Pok&eacute;mon`]);
+				let type = fId.charAt(0).toUpperCase() + fId.slice(1) as Dex.TypeName;
+				buf.push(['header', `${type}-type Pok\u00e9mon`]);
 				for (let id in BattlePokedex) {
 					if (!BattlePokedex[id].types) continue;
 					if (this.dex.species.get(id).types.includes(type)) {
@@ -503,7 +526,7 @@ class DexSearch {
 			case 'ability':
 				// Nihilslave: idk why it uses Dex here instead of this.dex, but it's risky to change
 				let ability = Dex.abilities.get(fId).name;
-				buf.push(['header', `${ability} Pok&eacute;mon`]);
+				buf.push(['header', `${ability} Pok\u00e9mon`]);
 				for (let id in BattlePokedex) {
 					if (!BattlePokedex[id].abilities) continue;
 					if (Dex.hasAbility(this.dex.species.get(id), ability)) {
@@ -582,7 +605,7 @@ abstract class BattleTypedSearch<T extends SearchType> {
 	 * `set` is a pseudo-base filter; it has minor effects on move sorting.
 	 * (Abilities/items can affect what moves are sorted as usable.)
 	 */
-	set: PokemonSet | null = null;
+	set: Dex.PokemonSet | null = null;
 
 	/**
 	 * Cached copy of what the results list would be with only base filters
@@ -594,12 +617,12 @@ abstract class BattleTypedSearch<T extends SearchType> {
 	 * is wondering why a specific result isn't showing up.
 	 */
 	baseIllegalResults: SearchRow[] | null = null;
-	illegalReasons: {[id: string]: string} | null = null;
+	illegalReasons: { [id: string]: string } | null = null;
 	results: SearchRow[] | null = null;
 
 	protected readonly sortRow: SearchRow | null = null;
 
-	constructor(searchType: T, format = '' as ID, speciesOrSet: ID | PokemonSet = '' as ID) {
+	constructor(searchType: T, format = '' as ID, speciesOrSet: ID | Dex.PokemonSet = '' as ID) {
 		this.searchType = searchType;
 
 		this.baseResults = null;
@@ -620,18 +643,18 @@ abstract class BattleTypedSearch<T extends SearchType> {
 		if (typeof speciesOrSet === 'string') {
 			if (speciesOrSet) this.species = speciesOrSet;
 		} else {
-			this.set = speciesOrSet as PokemonSet;
+			this.set = speciesOrSet;
 			this.species = toID(this.set.species);
 		}
-		if (!searchType || !this.set) return;
+		// if (!searchType || !this.set) return;
 	}
 	getResults(filters?: SearchFilter[] | null, sortCol?: string | null, reverseSort?: boolean): SearchRow[] {
 		if (sortCol === 'type') {
-			return [this.sortRow!, ...BattleTypeSearch.prototype.getDefaultResults.call(this)];
+			return [this.sortRow!, ...BattleTypeSearch.prototype.getDefaultResults.call(this, reverseSort)];
 		} else if (sortCol === 'category') {
-			return [this.sortRow!, ...BattleCategorySearch.prototype.getDefaultResults.call(this)];
+			return [this.sortRow!, ...BattleCategorySearch.prototype.getDefaultResults.call(this, reverseSort)];
 		} else if (sortCol === 'ability') {
-			return [this.sortRow!, ...BattleAbilitySearch.prototype.getDefaultResults.call(this)];
+			return [this.sortRow!, ...BattleAbilitySearch.prototype.getDefaultResults.call(this, reverseSort)];
 		}
 
 		if (!this.baseResults) {
@@ -639,7 +662,7 @@ abstract class BattleTypedSearch<T extends SearchType> {
 		}
 
 		if (!this.baseIllegalResults) {
-			const legalityFilter: {[id: string]: 1} = {};
+			const legalityFilter: { [id: string]: 1 } = {};
 			for (const [resultType, value] of this.baseResults) {
 				if (resultType === this.searchType) legalityFilter[value] = 1;
 			}
@@ -681,6 +704,9 @@ abstract class BattleTypedSearch<T extends SearchType> {
 			results = [...this.baseResults];
 			illegalResults = null;
 		}
+		if (this.defaultFilter) {
+			results = this.defaultFilter(results);
+		}
 
 		if (sortCol) {
 			results = results.filter(([rowType]) => rowType === this.searchType);
@@ -694,7 +720,7 @@ abstract class BattleTypedSearch<T extends SearchType> {
 		if (this.sortRow) {
 			results = [this.sortRow, ...results];
 		}
-		if (illegalResults && illegalResults.length) {
+		if (illegalResults?.length) {
 			results = [...results, ['header', "Illegal results"], ...illegalResults];
 		}
 		return results;
@@ -708,7 +734,7 @@ abstract class BattleTypedSearch<T extends SearchType> {
 	protected canLearn(speciesid: ID, moveid: ID) {
 		return this.dex.canLearn(speciesid, moveid);
 	}
-	getTier(pokemon: Species) {
+	getTier(pokemon: Dex.Species) {
 		return this.dex.species.get(pokemon.name).tier;
 	}
 	eggMovesOnly(child: ID, father: ID) {
@@ -720,15 +746,16 @@ abstract class BattleTypedSearch<T extends SearchType> {
 		}
 		return true;
 	}
-	abstract getTable(): {[id: string]: any};
+	abstract getTable(): { [id: string]: any };
 	abstract getDefaultResults(): SearchRow[];
 	abstract getBaseResults(): SearchRow[];
 	abstract filter(input: SearchRow, filters: string[][]): boolean;
+	defaultFilter?(input: SearchRow[]): SearchRow[];
 	abstract sort(input: SearchRow[], sortCol: string, reverseSort?: boolean): SearchRow[];
 }
 
 class BattlePokemonSearch extends BattleTypedSearch<'pokemon'> {
-	sortRow: SearchRow = ['sortpokemon', ''];
+	override sortRow: SearchRow = ['sortpokemon', ''];
 	getTable() {
 		return BattlePokedex;
 	}
@@ -787,7 +814,7 @@ class BattlePokemonSearch extends BattleTypedSearch<'pokemon'> {
 			switch (filterType) {
 			case 'type':
 				// Nihilslave: change this for digimon, it works better anyway tho
-				if (!species.types.includes(value as TypeName)) return false;
+				if (!species.types.includes(value as Dex.TypeName)) return false;
 				break;
 			case 'egggroup':
 				if (species.eggGroups[0] !== value && species.eggGroups[1] !== value) return false;
@@ -808,8 +835,8 @@ class BattlePokemonSearch extends BattleTypedSearch<'pokemon'> {
 		const sortOrder = reverseSort ? -1 : 1;
 		if (['hp', 'atk', 'def', 'spa', 'spd', 'spe'].includes(sortCol)) {
 			return results.sort(([rowType1, id1], [rowType2, id2]) => {
-				const stat1 = this.dex.species.get(id1).baseStats[sortCol as StatName];
-				const stat2 = this.dex.species.get(id2).baseStats[sortCol as StatName];
+				const stat1 = this.dex.species.get(id1).baseStats[sortCol as Dex.StatName];
+				const stat2 = this.dex.species.get(id2).baseStats[sortCol as Dex.StatName];
 				return (stat2 - stat1) * sortOrder;
 			});
 		} else if (sortCol === 'bst') {
@@ -839,13 +866,14 @@ class BattleAbilitySearch extends BattleTypedSearch<'ability'> {
 	getTable() {
 		return BattleAbilities;
 	}
-	getDefaultResults(): SearchRow[] {
+	getDefaultResults(reverseSort?: boolean): SearchRow[] {
 		const results: SearchRow[] = [];
 		for (let id in BattleAbilities) {
 			const skipped = ['noability', 'mountaineer', 'rebound', 'persistent', 'allseeingeye'];
 			if (skipped.includes(id)) continue;
 			results.push(['ability', id as ID]);
 		}
+		if (reverseSort) results.reverse();
 		return results;
 	}
 	getBaseResults() {
@@ -917,11 +945,19 @@ class BattleItemSearch extends BattleTypedSearch<'item'> {
 		const speciesName = this.dex.species.get(this.species).name;
 		const results = this.getDefaultResults();
 		const speciesSpecific: SearchRow[] = [];
+		const abilitySpecific: SearchRow[] = [];
+		const abilityItem = {
+			protosynthesis: 'boosterenergy',
+			quarkdrive: 'boosterenergy',
+			// poisonheal: 'toxicorb',
+			// toxicboost: 'toxicorb',
+			// flareboost: 'flameorb',
+		}[toID(this.set?.ability) as string];
 		for (const row of results) {
 			if (row[0] !== 'item') continue;
-			if (this.dex.items.get(row[1]).itemUser?.includes(speciesName)) {
-				speciesSpecific.push(row);
-			}
+			const item = this.dex.items.get(row[1]);
+			if (item.itemUser?.includes(speciesName)) speciesSpecific.push(row);
+			if (abilityItem === item.id) abilitySpecific.push(row);
 		}
 		if (speciesSpecific.length) {
 			return [
@@ -930,19 +966,23 @@ class BattleItemSearch extends BattleTypedSearch<'item'> {
 				...results,
 			];
 		}
+		if (abilitySpecific.length) {
+			return [
+				['header', `Specific to ${this.set!.ability!}`],
+				...abilitySpecific,
+				...results,
+			];
+		}
+		return results;
+	}
+	override defaultFilter(results: SearchRow[]) {
+		if (this.species && !this.dex.species.get(this.species).nfe) {
+			results.splice(results.findIndex(row => row[1] === 'eviolite'), 1);
+			return results;
+		}
 		return results;
 	}
 	filter(row: SearchRow, filters: string[][]) {
-		if (!filters) return true;
-		if (row[0] !== 'ability') return true;
-		const ability = this.dex.abilities.get(row[1]);
-		for (const [filterType, value] of filters) {
-			switch (filterType) {
-			case 'pokemon':
-				if (!Dex.hasAbility(this.dex.species.get(value), ability.name)) return false;
-				break;
-			}
-		}
 		return true;
 	}
 	sort(results: SearchRow[], sortCol: string | null, reverseSort?: boolean): SearchRow[] {
@@ -951,7 +991,7 @@ class BattleItemSearch extends BattleTypedSearch<'item'> {
 }
 
 class BattleMoveSearch extends BattleTypedSearch<'move'> {
-	sortRow: SearchRow = ['sortmove', ''];
+	override sortRow: SearchRow = ['sortmove', ''];
 	getTable() {
 		return BattleMovedex;
 	}
@@ -965,7 +1005,7 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 		}
 		return results;
 	}
-	private moveIsNotUseless(id: ID, species: Species, moves: string[], set: PokemonSet | null) {
+	private moveIsNotUseless(id: ID, species: Dex.Species, moves: string[], set: Dex.PokemonSet | null) {
 		const dex = this.dex;
 
 		let abilityid: ID = set ? toID(set.ability) : '' as ID;
@@ -1277,7 +1317,7 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 		const sortOrder = reverseSort ? -1 : 1;
 		switch (sortCol) {
 		case 'power':
-			let powerTable: {[id: string]: number | undefined} = {
+			let powerTable: { [id: string]: number | undefined } = {
 				return: 102, frustration: 102, spitup: 300, trumpcard: 200, naturalgift: 80, grassknot: 120,
 				lowkick: 120, gyroball: 150, electroball: 150, flail: 200, reversal: 200, present: 120,
 				wringout: 120, crushgrip: 120, heatcrash: 120, heavyslam: 120, fling: 130, magnitude: 150,
@@ -1328,14 +1368,16 @@ class BattleMoveSearch extends BattleTypedSearch<'move'> {
 
 class BattleCategorySearch extends BattleTypedSearch<'category'> {
 	getTable() {
-		return {physical: 1, special: 1, status: 1};
+		return { physical: 1, special: 1, status: 1 };
 	}
-	getDefaultResults(): SearchRow[] {
-		return [
+	getDefaultResults(reverseSort?: boolean): SearchRow[] {
+		const results: SearchRow[] = [
 			['category', 'physical' as ID],
 			['category', 'special' as ID],
 			['category', 'status' as ID],
 		];
+		if (reverseSort) results.reverse();
+		return results;
 	}
 	getBaseResults() {
 		return this.getDefaultResults();
@@ -1353,8 +1395,10 @@ class BattleTypeSearch extends BattleTypedSearch<'type'> {
 	getTable() {
 		return window.BattleTypeChart;
 	}
-	getDefaultResults(): SearchRow[] {
-		return this.dex.getTypeSet();
+	getDefaultResults(reverseSort?: boolean): SearchRow[] {
+		const results = this.dex.getTypeSet();
+		if (reverseSort) results.reverse();
+		return results;
 	}
 	getBaseResults() {
 		return this.getDefaultResults();
