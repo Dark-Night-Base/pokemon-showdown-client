@@ -3766,6 +3766,7 @@ export class Battle {
 			this.useMove(poke, move, poke2, kwArgs);
 			this.animateMove(poke, move, poke2, kwArgs);
 			this.scene.afterMove(poke);
+			console.log(`i'm in runMajor case 'move'! ${args.join(',')}`);
 			this.log(args, kwArgs);
 			break;
 		}
@@ -3827,7 +3828,9 @@ export class Battle {
 			return;
 		}
 		if (!str) return;
+		console.log(`i'm before parseBattleLine! ${str}`);
 		const { args, kwArgs } = BattleTextParser.parseBattleLine(str);
+		console.log(`i'm after parseBattleLine! ${args.join(',')}`);
 
 		if (this.scene.maybeCloseMessagebar(args, kwArgs)) {
 			this.currentStep--;
@@ -3842,6 +3845,7 @@ export class Battle {
 		if (nextLine.startsWith('|-')) {
 			({ args: nextArgs, kwArgs: nextKwargs } = BattleTextParser.parseBattleLine(nextLine));
 		}
+		console.log(`i'm after another parseBattleLine! ${nextArgs.join(',')}`);
 
 		if (this.debug) {
 			if (args[0].startsWith('-') || args[0] === 'detailschange') {

@@ -390,7 +390,7 @@ export class BattleLog {
 		}
 	}
 	addAFDMessage(args: Args, kwArgs: KWArgs = {}) {
-		return true;
+		return false;
 	}
 	messageFromLog(line: string) {
 		this.message(...this.parseLogMessage(line));
