@@ -216,35 +216,7 @@ class PSPrefs extends PSStreamModel<string | null> {
 	}
 
 	setAFD(mode?: typeof this['afd']) {
-		if (mode === undefined) {
-			// init
-			if (typeof BattleTextAFD !== 'undefined') {
-				for (const id in BattleTextNotAFD) {
-					if (!BattleTextAFD[id]) {
-						BattleTextAFD[id] = BattleTextNotAFD[id];
-					} else {
-						BattleTextAFD[id] = { ...BattleTextNotAFD[id], ...BattleTextAFD[id] };
-					}
-				}
-			}
-
-			if (Config.server?.afd) {
-				mode = true;
-			} else if (this.afd !== undefined) {
-				mode = this.afd;
-			} else {
-				// uncomment on April Fools' Day
-				// mode = true;
-			}
-		}
-
-		Dex.afdMode = mode;
-
-		if (mode === true) {
-			(BattleText as any) = BattleTextAFD;
-		} else {
-			(BattleText as any) = BattleTextNotAFD;
-		}
+		// do nothing
 	}
 	doAutojoin() {
 		let autojoin = PS.prefs.autojoin;
@@ -1299,47 +1271,7 @@ export class PSRoom extends PSStreamModel<Args | null> implements RoomOptions {
 			this.add('||Battle Messages: HIDDEN');
 		},
 		'afd'(target) {
-			if (!target) return this.send('/help afd');
-			let mode = toID(target);
-			if (mode === 'sprites') {
-				PS.prefs.set('afd', 'sprites');
-				PS.prefs.setAFD('sprites');
-				this.add('||April Fools\' Day mode set to SPRITES.');
-			} else if (mode === 'off') {
-				PS.prefs.set('afd', null);
-				PS.prefs.setAFD();
-				this.add('||April Fools\' Day mode set to OFF temporarily.');
-				this.add('||Trying to turn it off permanently? Use /afd never');
-			} else if (mode === 'default') {
-				PS.prefs.setAFD();
-				PS.prefs.set('afd', null);
-				this.add('||April Fools\' Day mode set to DEFAULT (Currently ' + (Dex.afdMode ? 'FULL' : 'OFF') + ').');
-			} else if (mode === 'full') {
-				PS.prefs.set('afd', true);
-				PS.prefs.setAFD(true);
-				this.add('||April Fools\' Day mode set to FULL.');
-			} else if (target === 'never') {
-				PS.prefs.set('afd', false);
-				PS.prefs.setAFD(false);
-				this.add('||April Fools\' Day mode set to NEVER.');
-				if (Config.server?.afd) {
-					this.add('||You\'re using the AFD URL, which will still override this setting and enable AFD mode on refresh.');
-				}
-			} else {
-				if (target) this.add('||AFD option "' + target + '" not recognized');
-				let curMode = PS.prefs.afd as string | boolean;
-				if (curMode === true) curMode = 'FULL';
-				if (curMode === false) curMode = 'NEVER';
-				if (curMode) curMode = curMode.toUpperCase();
-				if (!curMode) curMode = 'DEFAULT (currently ' + (Dex.afdMode ? 'FULL' : 'OFF') + ')';
-				this.add('||AFD is currently set to ' + mode);
-				this.send('/help afd');
-			}
-			for (let roomid in PS.rooms) {
-				let battle = PS.rooms[roomid] && (PS.rooms[roomid] as BattleRoom).battle;
-				if (!battle) continue;
-				battle.resetToCurrentTurn();
-			}
+			// do nothing
 		},
 		'clearpms'() {
 			let rooms = PS.miniRoomList.filter(roomid => roomid.startsWith('dm-'));

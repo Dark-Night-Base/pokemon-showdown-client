@@ -744,38 +744,7 @@ function toId() {
 			});
 		},
 		setAFD: function (mode) {
-			if (mode === undefined) {
-				// init
-				if (typeof BattleTextAFD !== 'undefined') {
-					for (var id in BattleTextNotAFD) {
-						if (!BattleTextAFD[id]) {
-							BattleTextAFD[id] = BattleTextNotAFD[id];
-						} else {
-							var combined = {};
-							Object.assign(combined, BattleTextNotAFD[id]);
-							Object.assign(combined, BattleTextAFD[id]);
-							BattleTextAFD[id] = combined;
-						}
-					}
-				}
-
-				if (Config.server.afd) {
-					mode = true;
-				} else if (Dex.prefs('afd') !== undefined) {
-					mode = Dex.prefs('afd');
-				} else {
-					// uncomment on April Fools' Day
-					// mode = true;
-				}
-			}
-
-			Dex.afdMode = mode;
-
-			if (mode === true) {
-				BattleText = BattleTextAFD;
-			} else {
-				BattleText = BattleTextNotAFD;
-			}
+			// do nothing
 		},
 		/**
 		 * This function establishes the actual connection to the sim server.

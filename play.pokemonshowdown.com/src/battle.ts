@@ -2010,10 +2010,6 @@ export class Battle {
 			let poke = this.getPokemon(args[1]);
 			if (poke) {
 				this.scene.resultAnim(poke, 'Super-effective', 'bad');
-				if (Dex.afdMode === true) {
-					// April Fool's 2018
-					this.scene.runOtherAnim('hitmark' as ID, [poke]);
-				}
 			}
 			if (this.activeMoveIsSpread) kwArgs.spread = '.';
 			this.log(args, kwArgs);
