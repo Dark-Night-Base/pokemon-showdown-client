@@ -551,7 +551,7 @@ export class Pokemon implements PokemonDetails, PokemonHealth {
 	}
 	getSpecies(serverPokemon?: ServerPokemon) {
 		// it's quite hard to show correct speed range on imposter in if, won't fix i think
-		return this.side.battle.dex.species.getFromPokemon({...this, speciesForme: this.getSpeciesForme(serverPokemon)});
+		return this.side.battle.dex.species.getFromPokemon({ ...this, speciesForme: this.getSpeciesForme(serverPokemon) });
 	}
 	getBaseSpecies() {
 		return this.side.battle.dex.species.getFromPokemon(this);
@@ -2403,6 +2403,7 @@ export class Battle {
 				case 'utilityumbrella':
 					poke.prevItemEffect = 'consumed';
 					poke.removeVolatile('utilityumbrella' as ID);
+					break;
 				default:
 					poke.prevItemEffect = 'consumed';
 					break;
