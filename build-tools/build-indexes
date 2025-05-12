@@ -1734,7 +1734,7 @@ console.log("DONE");
 process.stdout.write("Building `data/digimon.js`...");
 
 {
-	//#region teambuilder-tables
+	// #region teambuilder-tables
 	const DigimonTable = {};
 
 	let buf = '// DO NOT EDIT - automatically built with build-tools/build-indexes\n\n';
@@ -1768,10 +1768,12 @@ process.stdout.write("Building `data/digimon.js`...");
 	DigimonTable.monotypeBans = {};
 	DigimonTable.formatSlices = formatSlices;
 
-	const tierOrder = ["Uber", "(Uber)", "OU", "(OU)", "UUBL", "UU", "RUBL", "RU", "NUBL", "NU", "PUBL", "PU", "(PU)", "NFE", "LC", "Unreleased"];
+	const tierOrder = [
+		"Uber", "(Uber)", "OU", "(OU)", "UUBL", "UU", "RUBL", "RU", "NUBL", "NU", "PUBL", "PU", "(PU)", "NFE", "LC", "Unreleased"
+	];
 
 	for (const tier of tierOrder) {
-		if (tier in {OU:1, AG:1, Uber:1, UU:1, RU:1, NU:1, PU:1, "(PU)":1, NFE:1, LC:1, Legal:1, Regular:1}) {
+		if (tier in { OU: 1, AG: 1, Uber: 1, UU: 1, RU: 1, NU: 1, PU: 1, "(PU)": 1, NFE: 1, LC: 1, Legal: 1, Regular: 1 }) {
 			let usedTier = tier;
 			if (usedTier === "(PU)") usedTier = "ZU";
 			formatSlices[usedTier] = tiers.length;
