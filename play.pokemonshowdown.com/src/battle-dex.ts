@@ -209,6 +209,7 @@ const Dex = new class implements ModdedDex {
 			formatid.includes('multibattle')) modids.push('doubles' as ID);
 		if (formatid.includes('littlecup') || formatid.endsWith('lc')) modids.push('littlecup' as ID);
 		if (formatid.includes('nfe')) modids.push('nfe' as ID);
+		if (formatid.endsWith('ou')) modids.push('ou' as ID);
 		// oms
 		if (formatid.match(/\d\d\dcup/)) modids.push(formatid.match(/\d\d\dcup/)![0] as ID);
 		if (formatid.includes('almostanyability') || formatid.includes('aaa')) modids.push('almostanyability' as ID);
@@ -1572,6 +1573,11 @@ const ModModifier: {
 	nfe: {
 		ModifyTierSet: (tierSet: SearchRow[], dex: ModdedDex, extra?: any): SearchRow[] => tierSet.slice(
 			tierSet.findIndex(([type, value]) => type === 'header' && value === 'NFEs not in a higher tier')
+		),
+	},
+	ou: {
+		ModifyTierSet: (tierSet: SearchRow[], dex: ModdedDex, extra?: any): SearchRow[] => tierSet.slice(
+			tierSet.findIndex(([type, value]) => type === 'header' && value === 'OU')
 		),
 	},
 	// oms
