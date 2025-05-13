@@ -288,7 +288,7 @@ export const Dex = new class implements ModdedDex {
 		let modids = [];
 
 		// this theoratically should be /gen\d+/, but now this to avoid errors when gen9350cup
-		const genStrings = formatid.match(/gen\d/); // /gen(10|\d)/ after gen 10 releases
+		const genStrings = /gen\d/.exec(formatid); // /gen(10|\d)/ after gen 10 releases
 		const gen = genStrings ? genStrings[0] : this.currentGen;
 		// regulars
 		if (formatid.includes('anythinggoes') || formatid.endsWith('ag')) modids.push('anythinggoes' as ID);
@@ -299,7 +299,7 @@ export const Dex = new class implements ModdedDex {
 		if (formatid.includes('nfe')) modids.push('nfe' as ID);
 		if (formatid.endsWith('ou')) modids.push('ou' as ID);
 		// oms
-		if (formatid.match(/\d\d\dcup/)) modids.push(formatid.match(/\d\d\dcup/)![0] as ID);
+		if (/\d\d\dcup/.exec(formatid)) modids.push(/\d\d\dcup/.exec(formatid)![0] as ID);
 		if (formatid.includes('almostanyability') || formatid.includes('aaa')) modids.push('almostanyability' as ID);
 		if (formatid.includes('categoryswap')) modids.push('categoryswap' as ID);
 		if (formatid.includes('hackmons') || formatid.endsWith('bh')) modids.push('hackmons' as ID);
@@ -664,7 +664,6 @@ export const Dex = new class implements ModdedDex {
 		const mechanicsGen = options.gen || 6;
 		let isDynamax = !!options.dynamax;
 		if (pokemon instanceof Pokemon) {
-			// @ts-ignore
 			if (options.mod === 'infinitefusion' && !Dex.prefs('noif')) return this.getIFSpriteData(pokemon, isFront, options);
 			if (pokemon.volatiles.transform) {
 				options.shiny = pokemon.volatiles.transform[2];
@@ -848,17 +847,17 @@ export const Dex = new class implements ModdedDex {
 		noScale?: boolean,
 		mod?: string,
 		dynamax?: boolean,
-	} = {gen: 6}): {
-		gen: number;
-		w: number;
-		h: number;
-		y: number;
-		url: string;
-		pixelated: boolean;
-		isFrontSprite: boolean;
-		cryurl: string;
-		shiny?: boolean;
-	} {
+	} = { gen: 6 }): {
+			gen: number,
+			w: number,
+			h: number,
+			y: number,
+			url: string,
+			pixelated: boolean,
+			isFrontSprite: boolean,
+			cryurl: string,
+			shiny?: boolean,
+		} {
 		// battle sprites are 96x96, while teambuilder sprites are 120x120
 		let spriteData = {
 			gen: options.gen || 9,
@@ -881,11 +880,11 @@ export const Dex = new class implements ModdedDex {
 		// const nickname = pokemon.name || headname;
 		const headSpecies = Dex.species.get(headname);
 		const bodySpecies = Dex.species.get(pokemon.speciesForme);
-		if (!headSpecies.exists) return this.getSpriteData(pokemon, isFront, {...options, mod: undefined});
+		if (!headSpecies.exists) return this.getSpriteData(pokemon, isFront, { ...options, mod: undefined });
 		let headNum = headSpecies.num;
 		let bodyNum = bodySpecies.num;
 		// only these two are needed, currently
-		const specialFusions: {[k: string]: number[]} = {
+		const specialFusions: { [k: string]: number[] } = {
 			'kyuremblack': [644, 646],
 			'kyuremwhite': [643, 646],
 		};
@@ -895,19 +894,18 @@ export const Dex = new class implements ModdedDex {
 
 		const request = new XMLHttpRequest();
 		let found = false;
-		request.onreadystatechange = function() {
+		request.onreadystatechange = function () {
 			if (request.readyState === 4) {
 				if (request.status === 200) {
 					found = true;
 				}
 			}
-		}
+		};
 		try {
 			request.open('HEAD', spriteData.url, false);
 			request.send();
-		} catch (e) {}
-		if (!found) return this.getSpriteData(pokemon, isFront, {...options, mod: undefined});
-
+		} catch {}
+		if (!found) return this.getSpriteData(pokemon, isFront, { ...options, mod: undefined });
 
 		if (!options.noScale) {
 			if (spriteData.isFrontSprite) {
@@ -1066,7 +1064,7 @@ export const Dex = new class implements ModdedDex {
 	}
 
 	// Nihilslave: get IF Sprites
-	getIFTeambuilderSpriteData(pokemon: any, gen: number = 0): TeambuilderSpriteData {
+	getIFTeambuilderSpriteData(pokemon: any, gen = 0): TeambuilderSpriteData {
 		let headSpecies = Dex.species.get(pokemon.name);
 		let bodySpecies = Dex.species.get(pokemon.species);
 		const headNum = headSpecies.num;
@@ -1080,7 +1078,7 @@ export const Dex = new class implements ModdedDex {
 		};
 		const url = Dex.resourcePrefix + 'sprites/infinitefusion/' + spriteData.spriteid + '.png';
 		const request = new XMLHttpRequest();
-		request.onreadystatechange = function() {
+		request.onreadystatechange = function () {
 			if (request.readyState === 4) {
 				if (request.status === 200) {
 					spriteData.shiny = false;
@@ -1088,19 +1086,20 @@ export const Dex = new class implements ModdedDex {
 					spriteData.shiny = true;
 				}
 			}
-		}
+		};
 		try {
 			request.open('HEAD', url, false);
 			request.send();
-		} catch (e) {}
+		} catch {}
 
 		return spriteData;
 	}
 
-	getTeambuilderSprite(pokemon: any, gen: number = 0) {
+	getTeambuilderSprite(pokemon: any, gen = 0) {
 		if (!pokemon) return '';
 		// Nihilslave: for IF
-		const data = (pokemon.isIF && !Dex.prefs('noif')) ? this.getIFTeambuilderSpriteData(pokemon, gen) : this.getTeambuilderSpriteData(pokemon, gen);
+		const data = (pokemon.isIF && !Dex.prefs('noif')) ?
+			this.getIFTeambuilderSpriteData(pokemon, gen) : this.getTeambuilderSpriteData(pokemon, gen);
 		if (pokemon.isIF && data.shiny) return data.spriteid.split('/')[1];
 		const shiny = (data.shiny ? '-shiny' : '');
 		return `background-image:url(${Dex.resourcePrefix}${data.spriteDir}${shiny}/${data.spriteid}.png);background-position:${data.x}px ${data.y}px;background-repeat:no-repeat`;
@@ -1302,7 +1301,7 @@ export class ModdedDex {
 				data.category = Dex.getGen3Category(data.type);
 			}
 			for (const mid of this.modid) {
-				if (ModModifier[mid]?.movesMod) ModModifier[mid].movesMod!(data, this);
+				if (ModModifier[mid]?.movesMod) ModModifier[mid].movesMod(data, this);
 			}
 
 			const move = new Move(id, name, data);
@@ -1329,7 +1328,7 @@ export class ModdedDex {
 				}
 			}
 			for (const mid of this.modid) {
-				if (ModModifier[mid]?.itemsMod) ModModifier[mid].itemsMod!(data, this);
+				if (ModModifier[mid]?.itemsMod) ModModifier[mid].itemsMod(data, this);
 			}
 
 			const item = new Item(id, name, data);
@@ -1356,7 +1355,7 @@ export class ModdedDex {
 				}
 			}
 			for (const mid of this.modid) {
-				if (ModModifier[mid]?.abilitiesMod) ModModifier[mid].abilitiesMod!(data, this);
+				if (ModModifier[mid]?.abilitiesMod) ModModifier[mid].abilitiesMod(data, this);
 			}
 
 			const ability = new Ability(id, name, data);
@@ -1383,12 +1382,12 @@ export class ModdedDex {
 				}
 			}
 			if (this.gen < 3) {
-				data.abilities = {0: "No Ability"};
+				data.abilities = { 0: "No Ability" };
 			}
 			for (const mid of this.modid) {
-				if (ModModifier[mid]?.speciesMod) ModModifier[mid].speciesMod!(data, this);
+				if (ModModifier[mid]?.speciesMod) ModModifier[mid].speciesMod(data, this);
 			}
-			if (!data.tier && id.slice(-5) === 'totem') {
+			if (!data.tier && id.endsWith('totem')) {
 				data.tier = this.species.get(id.slice(0, -5)).tier;
 			}
 			if (!data.tier && data.baseSpecies && toID(data.baseSpecies) !== id) {
@@ -1409,7 +1408,7 @@ export class ModdedDex {
 		// for species oms
 		getFromPokemon: (pokemon: Pokemon | ServerPokemon | Dex.PokemonSet, extra?: any): Species => {
 			for (const mid of this.modid) {
-				if (ModModifier[mid]?.ModifySpecies) return ModModifier[mid].ModifySpecies!(pokemon, this, extra);
+				if (ModModifier[mid]?.ModifySpecies) return ModModifier[mid].ModifySpecies(pokemon, this, extra);
 			}
 			const species = (pokemon as Dex.PokemonSet).species || (pokemon as (Pokemon | ServerPokemon)).speciesForme;
 			return this.species.get(species);
@@ -1450,7 +1449,7 @@ export class ModdedDex {
 				}
 			}
 			for (const mid of this.modid) {
-				if (ModModifier[mid]?.typesMod) ModModifier[mid].typesMod!(data);
+				if (ModModifier[mid]?.typesMod) ModModifier[mid].typesMod(data);
 			}
 
 			if (data.exists) this.cache.Types[id] = data;
@@ -1514,7 +1513,7 @@ export class ModdedDex {
 		let modified = false;
 		for (const mid of this.modid) {
 			if (ModModifier[mid]?.ModifyTierSet) {
-				tierSet = ModModifier[mid].ModifyTierSet!(tierSet, this, slices);
+				tierSet = ModModifier[mid].ModifyTierSet(tierSet, this, slices);
 				modified = true;
 			}
 		}
@@ -1639,7 +1638,7 @@ export class ModdedDex {
 			if (this.canLearn(toID(pokemon.species), id as ID)) moves.push(id);
 		}
 		for (const mid of this.modid) {
-			if (ModModifier[mid]?.ModifyLearnset) moves = ModModifier[mid].ModifyLearnset!(pokemon, this, moves);
+			if (ModModifier[mid]?.ModifyLearnset) moves = ModModifier[mid].ModifyLearnset(pokemon, this, moves);
 		}
 		return moves;
 	}
@@ -1671,7 +1670,7 @@ const ModModifier: {
 		ModifySpecies?: (pokemon: Pokemon | ServerPokemon | Dex.PokemonSet, dex: ModdedDex, extra?: any) => Species,
 		ModifyTierSet?: (tierSet: SearchRow[], dex: ModdedDex, extra?: any) => SearchRow[],
 		ModifyLearnset?: (pokemon: Dex.PokemonSet, dex: ModdedDex, learnset: string[], extra?: any) => string[],
-	}
+	},
 } = {
 	// regulars
 	anythinggoes: {
@@ -1680,7 +1679,7 @@ const ModModifier: {
 	doubles: {
 		speciesMod: (data: any, extra?: any): any => {
 			let gen = 9;
-			if (extra && extra.gen) gen = extra.gen;
+			if (extra?.gen) gen = extra.gen;
 			const table = window.BattleTeambuilderTable[`gen${gen}doubles`];
 			if (data.id in table.overrideTier) data.tier = table.overrideTier[data.id];
 		},
@@ -1706,7 +1705,7 @@ const ModModifier: {
 			if (!data.exists) return;
 			if (data.bst > 350) return;
 			data.bst = 0;
-			let newStats = {...data.baseStats};
+			let newStats = { ...data.baseStats };
 			for (const stat in data.baseStats) {
 				newStats[stat] = data.baseStats[stat] * 2;
 				if (newStats[stat] < 1) newStats[stat] = 1;
@@ -1782,7 +1781,7 @@ const ModModifier: {
 			data.bst = 0;
 			let bestStatName = 'hp';
 			let bestStat = 0;
-			let newStats = {...data.baseStats};
+			let newStats = { ...data.baseStats };
 			for (const stat in data.baseStats) {
 				const oldStat = data.baseStats[stat];
 				if (oldStat > bestStat) {
@@ -1804,11 +1803,11 @@ const ModModifier: {
 		speciesMod: (data: any, extra?: any): any => {
 			if (!data.exists) return;
 			const cupName = (extra && (extra.modid as ID[]).find(id => id.includes('cup'))) || '600cup';
-			const goalBST = parseInt(cupName.slice(0, 3))
+			const goalBST = parseInt(cupName.slice(0, 3));
 			const bstWithoutHp: number = data.bst - data.baseStats['hp'];
 			const scale = goalBST - data.baseStats['hp'];
 			data.bst = data.baseStats['hp'];
-			let newStats = {...data.baseStats};
+			let newStats = { ...data.baseStats };
 			for (const stat in data.baseStats) {
 				if (stat === 'hp') continue;
 				newStats[stat] = Math.floor(data.baseStats[stat] * scale / bstWithoutHp);
@@ -1823,8 +1822,8 @@ const ModModifier: {
 	stabmons: {
 		ModifyLearnset: (pokemon: Dex.PokemonSet, dex: ModdedDex, learnset: string[]): string[] => {
 			const moveDex = dex.getMovedex();
-			const isNatDex = dex.modid.includes('natdex' as ID);
-			const isLGPE = dex.modid.includes('gen7letsgo' as ID);
+			// const isNatDex = dex.modid.includes('natdex' as ID);
+			// const isLGPE = dex.modid.includes('gen7letsgo' as ID);
 			for (const id in moveDex) {
 				if (learnset.includes(id)) continue;
 				const move = dex.moves.get(id);
@@ -1838,17 +1837,17 @@ const ModModifier: {
 					const genDex = Dex.forGen(i);
 					moveTypes.push(genDex.moves.get(move.name).type);
 
-					const pokemon = genDex.species.get(species.name);
-					let baseSpecies = genDex.species.get(pokemon.changesFrom || pokemon.name);
-					if (!pokemon.battleOnly) speciesTypes.push(...pokemon.types);
-					let prevo = pokemon.prevo;
+					const _pokemon = genDex.species.get(species.name);
+					let baseSpecies = genDex.species.get(_pokemon.changesFrom || _pokemon.name);
+					if (!_pokemon.battleOnly) speciesTypes.push(..._pokemon.types);
+					let prevo = _pokemon.prevo;
 					while (prevo) {
 						const prevoSpecies = genDex.species.get(prevo);
 						speciesTypes.push(...prevoSpecies.types);
 						prevo = prevoSpecies.prevo;
 					}
-					if (pokemon.battleOnly && typeof pokemon.battleOnly === 'string') {
-						species = dex.species.get(pokemon.battleOnly);
+					if (_pokemon.battleOnly && typeof _pokemon.battleOnly === 'string') {
+						species = dex.species.get(_pokemon.battleOnly);
 					}
 					const excludedForme = (s: Species) => [
 						'Alola', 'Alola-Totem', 'Galar', 'Galar-Zen', 'Hisui', 'Paldea', 'Paldea-Combat', 'Paldea-Blaze', 'Paldea-Aqua',
@@ -1886,6 +1885,7 @@ const ModModifier: {
 		},
 		speciesMod: (data: any): any => {
 			if (!data.exists) return;
+			// eslint-disable-next-line no-restricted-globals
 			data.types = Array.from(new Set(data.types.map((type: Dex.TypeName) => (
 				type.replace(/(Ghost|Fairy)/g, 'Psychic')
 					.replace(/Bug/g, 'Grass')
@@ -1899,7 +1899,8 @@ const ModModifier: {
 	// species oms
 	createmons: {
 		ModifySpecies: (pokemon: Pokemon | ServerPokemon | Dex.PokemonSet, dex: ModdedDex, extra?: any): Species => {
-			const species = dex.species.get((pokemon as Pokemon | ServerPokemon).speciesForme || (pokemon as Dex.PokemonSet).species);
+			const species = dex.species.get(
+				(pokemon as Pokemon | ServerPokemon).speciesForme || (pokemon as Dex.PokemonSet).species);
 			// in Teambuilder
 			let evs = (pokemon as Dex.PokemonSet).evs;
 			let types = [(pokemon as Dex.PokemonSet).hpType, (pokemon as Dex.PokemonSet).teraType];
@@ -1908,7 +1909,7 @@ const ModModifier: {
 				const details = (pokemon as Pokemon | ServerPokemon).details;
 				const crtmInfo = (details.split(', ').find(value => value.startsWith('createmons:')) || '').slice(11);
 				if (crtmInfo) {
-					evs = {hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0};
+					evs = { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
 					const evsArray = crtmInfo.split(',').slice(0, 6).map(Number);
 					let i: Dex.StatName;
 					for (i in evs) evs[i] = evsArray.shift() || 0;
@@ -1917,8 +1918,9 @@ const ModModifier: {
 			}
 			// no extra info
 			if (!evs) return species;
+			// eslint-disable-next-line no-restricted-globals
 			types = Array.from(new Set(types));
-			return new Species(species.id, species.name, {...species, baseStats: evs, types: types});
+			return new Species(species.id, species.name, { ...species, baseStats: evs, types });
 		},
 		ModifyTierSet: (tierSet: SearchRow[], dex: ModdedDex, extra?: any): SearchRow[] => {
 			// for bc-specific pokemon
@@ -1965,10 +1967,10 @@ const ModModifier: {
 				if (!!crossSpecies.exists && crossSpecies.prevo) {
 					const crossPrevoSpecies = dex.species.get(crossSpecies.prevo);
 					if (!crossPrevoSpecies.prevo === !species.prevo) {
-						const mixedSpecies = {...species};
+						const mixedSpecies = { ...species };
 						mixedSpecies.bst = 0;
 						let stat: Dex.StatName;
-						let newStats = {...mixedSpecies.baseStats};
+						let newStats = { ...mixedSpecies.baseStats };
 						for (stat in mixedSpecies.baseStats) {
 							newStats[stat] += crossSpecies.baseStats[stat] - crossPrevoSpecies.baseStats[stat];
 							if (newStats[stat] < 1) newStats[stat] = 1;
@@ -1982,7 +1984,7 @@ const ModModifier: {
 						if (newTypes[0] === newTypes[1]) newTypes = [newTypes[0]];
 						mixedSpecies.types = newTypes;
 						mixedSpecies.abilities = crossSpecies.abilities;
-						return new Species(mixedSpecies.id, mixedSpecies.name, {...mixedSpecies});
+						return new Species(mixedSpecies.id, mixedSpecies.name, { ...mixedSpecies });
 					}
 				}
 			}
@@ -2014,7 +2016,8 @@ const ModModifier: {
 			const species = (pokemon as Dex.PokemonSet).species || (pokemon as (Pokemon | ServerPokemon)).speciesForme;
 			const headSpecies = dex.species.get(name);
 			const bodySpecies = dex.species.get(species);
-			if (!headSpecies.exists || !bodySpecies.exists) return new Species(bodySpecies.id, bodySpecies.name, {...bodySpecies});
+			if (!headSpecies.exists || !bodySpecies.exists)
+				return new Species(bodySpecies.id, bodySpecies.name, { ...bodySpecies });
 			// what does these even do...
 			// if (headSpecies.baseSpecies !== headSpecies.name || bodySpecies.baseSpecies !== bodySpecies.name) return new Species(bodySpecies.id, bodySpecies.name, {...bodySpecies});
 			// const nonstandard = ['CAP', 'Custom'];
@@ -2022,7 +2025,7 @@ const ModModifier: {
 			// 	bodySpecies.isNonstandard && nonstandard.includes(bodySpecies.isNonstandard)
 			// ) return new Species(bodySpecies.id, bodySpecies.name, {...bodySpecies});
 			if (headSpecies.name === bodySpecies.name) {
-				const specialSelfFusions: {[k: string]: string} = {
+				const specialSelfFusions: { [k: string]: string } = {
 					deoxys: 'Deoxys-Attack',
 					rotom: 'Rotom-Heat',
 					shaymin: 'Shaymin-Sky',
@@ -2054,7 +2057,7 @@ const ModModifier: {
 						) return dex.species.get(forme);
 					}
 				}
-				return new Species(bodySpecies.id, bodySpecies.name, {...bodySpecies});
+				return new Species(bodySpecies.id, bodySpecies.name, { ...bodySpecies });
 			}
 			const pair = [headSpecies.name, bodySpecies.name].sort();
 			if (pair[0] === 'Kyurem' && pair[1] === 'Reshiram') return dex.species.get('Kyurem-White');
@@ -2066,10 +2069,10 @@ const ModModifier: {
 			if (pair[0] === 'Arrokuda' && pair[1] === 'Cramorant') return dex.species.get('Cramorant-Gulping');
 			if (pair[0] === 'Cramorant' && pair[1] === 'Pikachu') return dex.species.get('Cramorant-Gorging');
 
-			const fusionSpecies = {...bodySpecies};
+			const fusionSpecies = { ...bodySpecies };
 			fusionSpecies.weightkg = Math.max(0.1, (headSpecies.weightkg + bodySpecies.weightkg) / 2);
 			// fusionSpecies.evos
-			let abilities: {0: string, 1?: string, H?: string, S?: string} = {
+			let abilities: { 0: string, 1?: string, H?: string, S?: string } = {
 				0: headSpecies.abilities[0],
 				1: bodySpecies.abilities[1] || bodySpecies.abilities[0],
 				H: headSpecies.abilities['H'],
@@ -2080,7 +2083,7 @@ const ModModifier: {
 			fusionSpecies.abilities = abilities;
 			fusionSpecies.bst = 0;
 			let i: Dex.StatName;
-			let newStats = {...fusionSpecies.baseStats};
+			let newStats = { ...fusionSpecies.baseStats };
 			for (i in fusionSpecies.baseStats) {
 				let headStat, bodyStat;
 				if (['hp', 'spa', 'spd'].includes(i)) {
@@ -2102,7 +2105,7 @@ const ModModifier: {
 			if (newTypes[1] === newTypes[0]) newTypes = [newTypes[0]];
 			fusionSpecies.types = newTypes;
 
-			return new Species(fusionSpecies.id, fusionSpecies.name, {...fusionSpecies});
+			return new Species(fusionSpecies.id, fusionSpecies.name, { ...fusionSpecies });
 		},
 		ModifyTierSet: (tierSet: SearchRow[], dex: ModdedDex, extra?: any): SearchRow[] => tierSet.filter(
 			([type, id]) => {
@@ -2134,7 +2137,7 @@ const ModModifier: {
 		},
 		speciesMod: (data: any, extra?: any): any => {
 			let gen = 9;
-			if (extra && extra.gen) gen = extra.gen;
+			if (extra?.gen) gen = extra.gen;
 			const table = window.BattleTeambuilderTable[`gen${gen}natdex`];
 			if (data.id in table.overrideTier) data.tier = table.overrideTier[data.id];
 		},
@@ -2155,7 +2158,7 @@ const ModModifier: {
 		speciesMod: (data: any): any => {
 			const table = window.BattleTeambuilderTable['gen7letsgo'];
 			if (data.id in table.overrideSpeciesData) Object.assign(data, table.overrideSpeciesData[data.id]);
-			data.abilities = {0: "No Ability"};
+			data.abilities = { 0: "No Ability" };
 			if (data.id in table.overrideTier) data.tier = table.overrideTier[data.id];
 		},
 	},
@@ -2230,13 +2233,13 @@ const ModModifier: {
 			// todo: don't let fairy type pass
 			// hint: removeType
 			let typeData = window.DigiTypeChart[data.id];
-			if (typeData && typeData.damageTaken) {
+			if (typeData?.damageTaken) {
 				typeData.exists = true;
 				// what does the following 3 lines do?
 				if (!typeData.id) typeData.id = data.id;
 				if (!typeData.name) typeData.name = data.name;
 				if (!typeData.effectType) typeData.effectType = 'Type';
-				data = {...typeData};
+				data = { ...typeData };
 			}
 		},
 		ModifyLearnset: (pokemon: Dex.PokemonSet, dex: ModdedDex, learnset: string[]): string[] => {

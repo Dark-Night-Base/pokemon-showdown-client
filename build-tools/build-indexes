@@ -1498,7 +1498,9 @@ process.stdout.write("Building `data/teambuilder-tables.js`... ");
 	// Mods
 	//
 
-	for (const mod of ['gen3rs', 'gen5bw1', 'gen7letsgo', 'gen8bdsp', 'gen9ssb', 'gen9morebalancedhackmons', 'createmons']) {
+	for (const mod of [
+		'gen3rs', 'gen5bw1', 'gen7letsgo', 'gen8bdsp', 'gen9ssb', 'gen9morebalancedhackmons', 'createmons',
+	]) {
 		const modDex = Dex.mod(mod);
 		const modData = modDex.data;
 		const parentDex = Dex.forGen(modDex.gen);
@@ -1769,7 +1771,7 @@ process.stdout.write("Building `data/digimon.js`...");
 	DigimonTable.formatSlices = formatSlices;
 
 	const tierOrder = [
-		"Uber", "(Uber)", "OU", "(OU)", "UUBL", "UU", "RUBL", "RU", "NUBL", "NU", "PUBL", "PU", "(PU)", "NFE", "LC", "Unreleased"
+		"Uber", "(Uber)", "OU", "(OU)", "UUBL", "UU", "RUBL", "RU", "NUBL", "NU", "PUBL", "PU", "(PU)", "NFE", "LC", "Unreleased",
 	];
 
 	for (const tier of tierOrder) {
@@ -1868,9 +1870,9 @@ process.stdout.write("Building `data/digimon.js`...");
 	buf += 'exports.DigiTypeChart = ' + es3stringify(DigiTypeChart) + ';';
 	buf += 'exports.DigiLearnsets = ' + es3stringify(DigiLearnsets) + ';';
 	buf += '\n\n';
-	//#endregion
+	// #endregion
 
-	//#region search-index
+	// #region search-index
 	let index = [];
 
 	index = index.concat(Object.keys(Digidex).map(x => x + ' pokemon'));
@@ -1880,8 +1882,12 @@ process.stdout.write("Building `data/digimon.js`...");
 	index = index.concat(Object.keys(DigiTypeChart).map(x => toID(x) + ' type'));
 	index = index.concat(['physical', 'special', 'status'].map(x => toID(x) + ' category'));
 	// useless but we just keep this
-	index = index.concat(['monster', 'water1', 'bug', 'flying', 'field', 'fairy', 'grass', 'humanlike', 'water3', 'mineral', 'amorphous', 'water2', 'ditto', 'dragon', 'undiscovered'].map(x => toID(x) + ' egggroup'));
-	index = index.concat(['ou', 'uu', 'ru', 'nu', 'pu', 'lc', 'nfe', 'uber', 'uubl', 'rubl', 'nubl', 'publ'].map(x => toID(x) + ' tier'));
+	index = index.concat([
+		'monster', 'water1', 'bug', 'flying', 'field', 'fairy', 'grass', 'humanlike', 'water3', 'mineral', 'amorphous', 'water2', 'ditto', 'dragon', 'undiscovered',
+	].map(x => toID(x) + ' egggroup'));
+	index = index.concat([
+		'ou', 'uu', 'ru', 'nu', 'pu', 'lc', 'nfe', 'uber', 'uubl', 'rubl', 'nubl', 'publ',
+	].map(x => toID(x) + ' tier'));
 
 	let DigimonArticleTitles = {};
 	index.push('pokemon article');
@@ -1896,7 +1902,7 @@ process.stdout.write("Building `data/digimon.js`...");
 		// 	index.push('m' + toID(name.slice(0, -5)) + ' ' + type + ' ' + id + ' 0');
 		// 	return;
 		// }
-		let oldI = i;
+		const oldI = i;
 		// if (name === 'Alakazam') i = 5;
 		let acronym;
 		if (oldI < 0 && i > 0) {
@@ -1977,7 +1983,7 @@ process.stdout.write("Building `data/digimon.js`...");
 	index[index.indexOf('ditto pokemon')] = 'ditto egggroup';
 	index[index.indexOf('ditto egggroup')] = 'ditto pokemon';
 
-	let DigimonSearchIndex = index.map(x => {
+	const DigimonSearchIndex = index.map(x => {
 		x = x.split(' ');
 		if (x.length > 3) {
 			x[3] = Number(x[3]);
@@ -1986,7 +1992,7 @@ process.stdout.write("Building `data/digimon.js`...");
 		return x;
 	});
 
-	let DigimonSearchIndexOffset = DigimonSearchIndex.map((entry, i) => {
+	const DigimonSearchIndexOffset = DigimonSearchIndex.map((entry, i) => {
 		const id = entry[0];
 		let name = '';
 		switch (entry[1]) {
@@ -2009,13 +2015,14 @@ process.stdout.write("Building `data/digimon.js`...");
 		return '';
 	});
 
-	let DigimonSearchCountIndex = {};
+	const DigimonSearchCountIndex = {};
 	for (const type in DigiTypeChart) {
 		DigimonSearchCountIndex[type + ' move'] = Object.keys(DigiMovedex).filter(id => (DigiMovedex[id].type === type)).length;
 	}
 
 	for (const type in DigiTypeChart) {
-		DigimonSearchCountIndex[type + ' pokemon'] = Object.keys(Digidex).filter(id => (Digidex[id].types.indexOf(type) >= 0)).length;
+		DigimonSearchCountIndex[type + ' pokemon'] = Object.keys(Digidex)
+			.filter(id => (Digidex[id].types.indexOf(type) >= 0)).length;
 	}
 
 	buf += 'exports.DigimonSearchIndex = ' + JSON.stringify(DigimonSearchIndex) + ';\n\n';
@@ -2025,7 +2032,7 @@ process.stdout.write("Building `data/digimon.js`...");
 	buf += 'exports.DigimonSearchCountIndex = ' + JSON.stringify(DigimonSearchCountIndex) + ';\n\n';
 
 	buf += 'exports.DigimonArticleTitles = ' + JSON.stringify(DigimonArticleTitles) + ';\n\n';
-	//#endregion
+	// #endregion
 
 	fs.writeFileSync('play.pokemonshowdown.com/data/digimon.js', buf);
 }
@@ -2040,11 +2047,12 @@ process.stdout.write("Building `data/createmons.js`...");
 
 {
 	const typeToPoint = requireNoCache('../caches/pokemon-showdown/dist/data/mods/createmons/pointchart.js').typeToPoint;
+	// eslint-disable-next-line @stylistic/max-len
 	const abilityToPoint = requireNoCache('../caches/pokemon-showdown/dist/data/mods/createmons/pointchart.js').abilityToPoint;
 	const moveToPoint = requireNoCache('../caches/pokemon-showdown/dist/data/mods/createmons/pointchart.js').moveToPoint;
 	const buf = 'exports.typeToPoint = ' + es3stringify(typeToPoint) + ';' +
-			'exports.abilityToPoint = ' + es3stringify(abilityToPoint) + ';' +
-			'exports.moveToPoint = ' + es3stringify(moveToPoint) + ';';
+		'exports.abilityToPoint = ' + es3stringify(abilityToPoint) + ';' +
+		'exports.moveToPoint = ' + es3stringify(moveToPoint) + ';';
 	fs.writeFileSync('play.pokemonshowdown.com/data/createmons.js', buf);
 }
 
