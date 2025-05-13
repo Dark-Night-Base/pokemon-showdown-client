@@ -2186,8 +2186,7 @@
 					def: BSPoint[2].toFixed(2),
 					spa: BSPoint[1].toFixed(2),
 					spd: BSPoint[2].toFixed(2),
-					spe: BSPoint[3].toFixed(2),
-				};
+					spe: BSPoint[3].toFixed(2) };
 				buf = '<div><em>Points</em></div>';
 				for (var stat in BSPoints) {
 					buf += '<div><b>' + BSPoints[stat] + '</b></div>';
@@ -2447,8 +2446,7 @@
 					def: BSPoint[2].toFixed(2),
 					spa: BSPoint[1].toFixed(2),
 					spd: BSPoint[2].toFixed(2),
-					spe: BSPoint[3].toFixed(2),
-				};
+					spe: BSPoint[3].toFixed(2) };
 				buf += '<div class="col basestatscol"><div><em>Points</em></div>';
 				for (var stat in BSPoints) {
 					buf += '<div><b>' + BSPoints[stat] + '</b></div>';
@@ -3924,8 +3922,8 @@
 			var f = function (x) { return x * x * x * 11 - x * x * 25 + x * 19 - 0.75; };
 			var g = function (x) { return x * x * x * 10 - x * x * 18 + x * 10 + 2; };
 			var k = function (x) { return (-x * x * x * x + x * x * x * 8 - x * x * 10 + x * 3 + 1); };
-			var A_w = (4 * Math.max(A(a), A(c)) + 1 * Math.min(A(a), A(c))) / 15e2;
-			var B_w = (2 * Math.max(B(h, b), B(h, d)) + 1 * Math.min(B(h, b), B(h, d))) / 36e4;
+			var A_w = (4 * Math.max(A(a), A(c)) + Number(Math.min(A(a), A(c)))) / 15e2;
+			var B_w = (2 * Math.max(B(h, b), B(h, d)) + Number(Math.min(B(h, b), B(h, d)))) / 36e4;
 			var E = S(s) / 300;
 			var f_A_w = f(A_w);
 			var g_B_w = g(B_w);

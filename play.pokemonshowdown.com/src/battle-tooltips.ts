@@ -858,14 +858,15 @@ export class BattleTooltips {
 			}
 			if (this.battle.dex.modid.includes('infinitefusion' as ID)) { // todo: for other mods too
 				if (clientPokemon) {
-					text += `&nbsp;`
+					text += `&nbsp;`;
 					let baseStats = clientPokemon.getSpecies().baseStats;
 					if (clientPokemon.volatiles.transform) {
-						baseStats = {...clientPokemon.volatiles.transform[1].getSpecies().baseStats, 'hp': 0}; // it's too hard to calc the correct hp, so just 0
+						// it's too hard to calc the correct hp, so just 0
+						baseStats = { ...clientPokemon.volatiles.transform[1].getSpecies().baseStats, 'hp': 0 };
 					}
 					for (const statName of Dex.statNames) {
 						text += statName === 'hp' ? '<small>' : '<small>/';
-						text += '' + (baseStats[statName] ? baseStats[statName] : '-') + '</small>';
+						text += `${baseStats[statName] ? baseStats[statName] : '-'}</small>`;
 					}
 				}
 			}
@@ -911,7 +912,8 @@ export class BattleTooltips {
 		}
 
 		const supportsAbilities = this.battle.gen > 2 && !this.battle.dex.modid.includes("gen7letsgo" as ID);
-		const abilityPossibility = this.battle.dex.modid.includes("hackmons" as ID) || this.battle.dex.modid.includes('createmons' as ID);
+		const abilityPossibility = this.battle.dex.modid.includes("hackmons" as ID) ||
+			this.battle.dex.modid.includes('createmons' as ID);
 
 		let abilityText = '';
 		if (supportsAbilities) {
@@ -1539,7 +1541,6 @@ export class BattleTooltips {
 	getSpeedRange(pokemon: Pokemon): [number, number] {
 		const tr = Math.trunc || Math.floor;
 		const species = pokemon.getSpecies();
-		let rules = this.battle.rules;
 		let baseSpe = species.baseStats.spe;
 		if (this.battle.dex.modid.includes('infinitefusion' as ID) && pokemon.volatiles.transform) {
 			baseSpe = pokemon.volatiles.transform[1].getSpecies().baseStats.spe;
@@ -2477,7 +2478,10 @@ export class BattleTooltips {
 		}
 
 		// Pokemon-specific items
-		if (item.name === 'Soul Dew' && (this.battle.gen < 7 || this.battle.dex.modid.includes('gen9morebalancedhackmons' as ID))) {
+		if (
+			item.name === 'Soul Dew' &&
+			(this.battle.gen < 7 || this.battle.dex.modid.includes('gen9morebalancedhackmons' as ID))
+		) {
 			return value;
 		}
 		if (BattleTooltips.orbUsers[speciesName]?.includes(item.name) &&
@@ -2515,7 +2519,7 @@ export class BattleTooltips {
 	getPokemonTypes(pokemon: Pokemon | ServerPokemon, preterastallized = false): readonly Dex.TypeName[] {
 		if (!(pokemon as Pokemon).getTypes) {
 			// Nihilslave: this is the part for my-side pokemon
-			let types: ReadonlyArray<Dex.TypeName>;
+			let types: readonly Dex.TypeName[];
 			types = this.battle.dex.species.getFromPokemon(pokemon).types;
 			return types;
 		}
