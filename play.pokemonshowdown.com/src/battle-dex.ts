@@ -2130,6 +2130,12 @@ const ModModifier: {
 			return learnset;
 		},
 	},
+	// teambuilder oms
+	monotype: {
+		ModifyTierSet: (tierSet: SearchRow[], dex: ModdedDex, extra?: any): SearchRow[] => tierSet.slice(
+			tierSet.findIndex(([type, value]) => type === 'header' && value === 'OU')
+		),
+	},
 	// pet mods
 	natdex: {
 		movesMod: (data: any): any => {
