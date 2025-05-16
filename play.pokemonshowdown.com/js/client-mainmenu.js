@@ -1272,8 +1272,7 @@
 					"S/V Singles": true, "S/V Doubles": true, "Unofficial Metagames": true, "National Dex": true, "OM of the Month": true,
 					"Other Metagames": true, "Randomized Format Spotlight": true, "RoA Spotlight": true,
 					// For psc
-					"Server Special": true, "Server Special OMs": true, "Balanced Hackmons": true, "BH Mashups": true,
-				};
+					"Tournament": true, "Server Special": true, "Server Special OMs": true, "Balanced Hackmons": true, "BH Mashups": true };
 			}
 			if (!this.starred) this.starred = Storage.prefs('starredformats') || {};
 			if (!this.search) this.search = "";
