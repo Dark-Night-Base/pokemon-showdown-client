@@ -310,6 +310,7 @@ export const Dex = new class implements ModdedDex {
 		if (formatid.includes('thecardgame')) modids.push('thecardgame' as ID);
 		// species oms
 		// mnm, camo, ce, ...
+		if (formatid.includes('badnboosted')) modids.push('badnboosted' as ID);
 		if (formatid.includes('createmons')) modids.push('createmons' as ID);
 		if (formatid.includes('crossevolution')) modids.push('crossevolution' as ID);
 		if (formatid.includes('infinitefusion')) modids.push('infinitefusion' as ID);
@@ -1897,6 +1898,20 @@ const ModModifier: {
 		},
 	},
 	// species oms
+	badnboosted: {
+		speciesMod: (data: any): any => {
+			if (!data.exists) return;
+			data.bst = 0;
+			let newStats = { ...data.baseStats };
+			for (const stat in data.baseStats) {
+				if (data.baseStats[stat] <= 70) newStats[stat] = data.baseStats[stat] * 2;
+				else newStats[stat] = data.baseStats[stat];
+				data.bst += newStats[stat];
+			}
+			data.baseStats = newStats;
+		},
+		ModifyTierSet: (tierSet: SearchRow[], dex: ModdedDex, extra?: any): SearchRow[] => tierSet,
+	},
 	createmons: {
 		ModifySpecies: (pokemon: Pokemon | ServerPokemon | Dex.PokemonSet, dex: ModdedDex, extra?: any): Species => {
 			const species = dex.species.get(
